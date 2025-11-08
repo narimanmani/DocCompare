@@ -49,7 +49,8 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
     form = DocCompareForm(request.POST, request.FILES)
     if not form.is_valid():
         status = 422 if request.headers.get("HX-Request") else 400
-        return render(request, "compare/upload.html", {"form": form}, status=status)
+        template = "compare/_upload_main.html" if request.headers.get("HX-Request") else "compare/upload.html"
+        return render(request, template, {"form": form}, status=status)
 
     options = DiffOptions.from_dict(form.cleaned_data)
     files = list(form.iter_files())
@@ -58,7 +59,8 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
     except (DocumentParseError, ValueError) as exc:
         form.add_error(None, str(exc))
         status = 422 if request.headers.get("HX-Request") else 400
-        return render(request, "compare/upload.html", {"form": form}, status=status)
+        template = "compare/_upload_main.html" if request.headers.get("HX-Request") else "compare/upload.html"
+        return render(request, template, {"form": form}, status=status)
 
     persisted = True
     storage_error: str | None = None
@@ -85,11 +87,12 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
     }
 
     if request.headers.get("HX-Request"):
+        template = "compare/_result_main.html"
         if persisted and saved is not None:
-            response = render(request, "compare/result.html", context)
+            response = render(request, template, context)
             response["HX-Redirect"] = reverse("compare:result", args=[saved.pk])
             return response
-        return render(request, "compare/result_section.html", context)
+        return render(request, template, context)
 
     if persisted and saved is not None:
         return redirect("compare:result", pk=saved.pk)

@@ -1,42 +1,47 @@
-<section class="bg-white shadow rounded p-4 space-y-3">
-    <h2 class="text-xl font-semibold">Summary</h2>
-    <dl class="grid grid-cols-2 gap-2 text-sm">
+<section class="app-panel">
+    <div class="app-panel-heading">
+        <h2 class="app-panel-title">Summary</h2>
+        <p class="app-panel-subtitle">Key stats from the comparison</p>
+    </div>
+    <dl class="app-summary-grid">
         <div>
-            <dt class="text-slate-500">Insertions</dt>
-            <dd class="font-semibold text-emerald-600">{{ summary.insertions }}</dd>
+            <dt>Insertions</dt>
+            <dd class="app-stat app-stat--positive">{{ summary.insertions }}</dd>
         </div>
         <div>
-            <dt class="text-slate-500">Deletions</dt>
-            <dd class="font-semibold text-rose-600">{{ summary.deletions }}</dd>
+            <dt>Deletions</dt>
+            <dd class="app-stat app-stat--negative">{{ summary.deletions }}</dd>
         </div>
         <div>
-            <dt class="text-slate-500">Replacements</dt>
-            <dd class="font-semibold">{{ summary.replacements }}</dd>
+            <dt>Replacements</dt>
+            <dd class="app-stat">{{ summary.replacements }}</dd>
         </div>
         <div>
-            <dt class="text-slate-500">Percent changed</dt>
-            <dd class="font-semibold">{{ summary.percent_changed }}%</dd>
+            <dt>Percent changed</dt>
+            <dd class="app-stat">{{ summary.percent_changed }}%</dd>
         </div>
     </dl>
-    <div class="pt-3 border-t border-slate-200">
-        <h3 class="text-sm font-semibold text-slate-600 mb-2">Link changes</h3>
-        <dl class="grid grid-cols-2 gap-2 text-sm">
-            <div>
-                <dt class="text-slate-500">Links added</dt>
-                <dd class="font-semibold text-emerald-600">{{ summary.links_added }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-500">Links removed</dt>
-                <dd class="font-semibold text-rose-600">{{ summary.links_removed }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-500">Link text updated</dt>
-                <dd class="font-semibold">{{ summary.links_changed_text }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-500">Link targets updated</dt>
-                <dd class="font-semibold">{{ summary.links_changed_href }}</dd>
-            </div>
-        </dl>
+    <div class="app-panel-divider"></div>
+    <div class="app-panel-heading">
+        <h3 class="app-panel-title app-panel-title--sm">Link changes</h3>
+        <p class="app-panel-subtitle">How URLs evolved across documents</p>
     </div>
+    <dl class="app-summary-grid">
+        <div>
+            <dt>Links added</dt>
+            <dd class="app-stat app-stat--positive">{{ summary.links_added }}</dd>
+        </div>
+        <div>
+            <dt>Links removed</dt>
+            <dd class="app-stat app-stat--negative">{{ summary.links_removed }}</dd>
+        </div>
+        <div>
+            <dt>Link text updated</dt>
+            <dd class="app-stat">{{ summary.links_changed_text }}</dd>
+        </div>
+        <div>
+            <dt>Link targets updated</dt>
+            <dd class="app-stat">{{ summary.links_changed_href }}</dd>
+        </div>
+    </dl>
 </section>

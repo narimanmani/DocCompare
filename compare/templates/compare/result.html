@@ -1,16 +1,5 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>DocDiff &mdash; Result</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css">
-    <link rel="stylesheet" href="{% static 'dist/styles.css' %}">
-    <script src="{% static 'dist/app.js' %}" defer></script>
-</head>
-<body class="bg-slate-100 text-slate-900">
-    <main class="mx-auto max-w-6xl space-y-6 px-6 py-10">
-        {% include 'compare/_result_content.html' %}
-    </main>
-</body>
-</html>
+{% extends 'compare/base.html' %}
+{% block title %}DocDiff — Result{% endblock %}
+{% block body %}
+    {% include 'compare/_result_main.html' %}
+{% endblock %}
