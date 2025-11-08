@@ -1,0 +1,1 @@
+"""Docdiff Django project package."""

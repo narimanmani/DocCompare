@@ -1,0 +1,20 @@
+<section class="bg-white shadow rounded p-4 space-y-3 mt-4">
+    <h2 class="text-xl font-semibold">Options</h2>
+    <ul class="text-sm space-y-1">
+        <li>
+            <span class="font-medium">Ignore case:</span>
+            <span>{{ options.ignore_case|yesno:"Enabled,Disabled" }}</span>
+        </li>
+        <li>
+            <span class="font-medium">Ignore punctuation:</span>
+            <span>{{ options.ignore_punctuation|yesno:"Enabled,Disabled" }}</span>
+        </li>
+        <li>
+            <span class="font-medium">Ignore whitespace:</span>
+            <span>{{ options.ignore_whitespace|yesno:"Enabled,Disabled" }}</span>
+        </li>
+    </ul>
+    <div>
+        <a href="{% url 'compare:export-pdf' result.pk %}" class="inline-flex items-center px-3 py-2 bg-emerald-600 text-white rounded">Download PDF</a>
+    </div>
+</section>
