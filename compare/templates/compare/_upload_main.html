@@ -1,0 +1,152 @@
+<main id="compare-root" class="app-shell">
+    <header class="app-header">
+        <div>
+            <p class="app-eyebrow">DOCX Diff</p>
+            <h1 class="app-title">Compare Word documents with confidence</h1>
+        </div>
+        <p class="app-subtitle">Upload two DOCX files and DocDiff will produce a polished change report with highlighted insertions, deletions, and URL updates.</p>
+    </header>
+    <section class="app-card">
+        <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#compare-root" hx-swap="outerHTML" hx-encoding="multipart/form-data" hx-indicator="#compare-indicator" class="app-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="app-alert">
+                    {{ form.non_field_errors|join:' ' }}
+                </div>
+            {% endif %}
+            <div class="app-form-grid">
+                {% for field in form|slice:':2' %}
+                    <div>
+                        <label class="app-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <p class="app-field-error">{{ field.errors|join:', ' }}</p>
+                        {% elif field.help_text %}
+                            <p class="app-help-text">{{ field.help_text }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <fieldset class="app-option-group">
+                <legend class="app-option-title">Text normalization</legend>
+                <label class="app-option" for="{{ form.ignore_case.id_for_label }}">
+                    {{ form.ignore_case }}
+                    <span>
+                        <span class="app-option-label">{{ form.ignore_case.label }}</span>
+                        {% if form.ignore_case.help_text %}
+                            <span class="app-help-text">{{ form.ignore_case.help_text }}</span>
+                        {% endif %}
+                        {% if form.ignore_case.errors %}
+                            <span class="app-field-error">{{ form.ignore_case.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.ignore_punctuation.id_for_label }}">
+                    {{ form.ignore_punctuation }}
+                    <span>
+                        <span class="app-option-label">{{ form.ignore_punctuation.label }}</span>
+                        {% if form.ignore_punctuation.help_text %}
+                            <span class="app-help-text">{{ form.ignore_punctuation.help_text }}</span>
+                        {% endif %}
+                        {% if form.ignore_punctuation.errors %}
+                            <span class="app-field-error">{{ form.ignore_punctuation.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.ignore_whitespace.id_for_label }}">
+                    {{ form.ignore_whitespace }}
+                    <span>
+                        <span class="app-option-label">{{ form.ignore_whitespace.label }}</span>
+                        {% if form.ignore_whitespace.help_text %}
+                            <span class="app-help-text">{{ form.ignore_whitespace.help_text }}</span>
+                        {% endif %}
+                        {% if form.ignore_whitespace.errors %}
+                            <span class="app-field-error">{{ form.ignore_whitespace.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+            </fieldset>
+            <fieldset class="app-option-group">
+                <legend class="app-option-title">URL handling</legend>
+                <label class="app-option" for="{{ form.ignore_protocol.id_for_label }}">
+                    {{ form.ignore_protocol }}
+                    <span>
+                        <span class="app-option-label">{{ form.ignore_protocol.label }}</span>
+                        {% if form.ignore_protocol.help_text %}
+                            <span class="app-help-text">{{ form.ignore_protocol.help_text }}</span>
+                        {% endif %}
+                        {% if form.ignore_protocol.errors %}
+                            <span class="app-field-error">{{ form.ignore_protocol.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.normalize_trailing_slash.id_for_label }}">
+                    {{ form.normalize_trailing_slash }}
+                    <span>
+                        <span class="app-option-label">{{ form.normalize_trailing_slash.label }}</span>
+                        {% if form.normalize_trailing_slash.help_text %}
+                            <span class="app-help-text">{{ form.normalize_trailing_slash.help_text }}</span>
+                        {% endif %}
+                        {% if form.normalize_trailing_slash.errors %}
+                            <span class="app-field-error">{{ form.normalize_trailing_slash.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.drop_tracking_params.id_for_label }}">
+                    {{ form.drop_tracking_params }}
+                    <span>
+                        <span class="app-option-label">{{ form.drop_tracking_params.label }}</span>
+                        {% if form.drop_tracking_params.help_text %}
+                            <span class="app-help-text">{{ form.drop_tracking_params.help_text }}</span>
+                        {% endif %}
+                        {% if form.drop_tracking_params.errors %}
+                            <span class="app-field-error">{{ form.drop_tracking_params.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.lowercase_host.id_for_label }}">
+                    {{ form.lowercase_host }}
+                    <span>
+                        <span class="app-option-label">{{ form.lowercase_host.label }}</span>
+                        {% if form.lowercase_host.help_text %}
+                            <span class="app-help-text">{{ form.lowercase_host.help_text }}</span>
+                        {% endif %}
+                        {% if form.lowercase_host.errors %}
+                            <span class="app-field-error">{{ form.lowercase_host.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+                <label class="app-option" for="{{ form.ignore_url_fragments.id_for_label }}">
+                    {{ form.ignore_url_fragments }}
+                    <span>
+                        <span class="app-option-label">{{ form.ignore_url_fragments.label }}</span>
+                        {% if form.ignore_url_fragments.help_text %}
+                            <span class="app-help-text">{{ form.ignore_url_fragments.help_text }}</span>
+                        {% endif %}
+                        {% if form.ignore_url_fragments.errors %}
+                            <span class="app-field-error">{{ form.ignore_url_fragments.errors|join:', ' }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+            </fieldset>
+            <div class="app-form-footer">
+                <div class="app-form-meta">
+                    <p class="app-help-text">Files are processed securely in-memory and discarded immediately after generating the diff.</p>
+                </div>
+                <div class="app-actions">
+                    <div id="compare-indicator" class="app-indicator" role="status" aria-live="polite">
+                        <span class="app-spinner" aria-hidden="true"></span>
+                        <span>Generating comparison&hellip;</span>
+                    </div>
+                    <button type="submit" class="app-button">Compare documents</button>
+                </div>
+            </div>
+        </form>
+    </section>
+    <section id="result" class="app-card app-placeholder">
+        <div class="app-placeholder-content">
+            <h2>Awaiting your documents</h2>
+            <p>Upload two Word files to see a side-by-side comparison with detailed highlights and link analysis.</p>
+        </div>
+    </section>
+</main>
