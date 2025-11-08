@@ -17,8 +17,13 @@
         <section class="bg-white shadow rounded p-6">
             <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="innerHTML">
                 {% csrf_token %}
-                <div class="grid grid-cols-1 gap-4">
-                    {% for field in form %}
+                {% if form.non_field_errors %}
+                    <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {{ form.non_field_errors|join:' ' }}
+                    </div>
+                {% endif %}
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    {% for field in form|slice:':2' %}
                         <div>
                             <label class="block text-sm font-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
@@ -30,6 +35,108 @@
                         </div>
                     {% endfor %}
                 </div>
+                <fieldset class="mt-4 space-y-2">
+                    <legend class="text-sm font-semibold text-slate-700">Text normalization</legend>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_case.id_for_label }}">
+                        {{ form.ignore_case }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.ignore_case.label }}</span>
+                            {% if form.ignore_case.help_text %}
+                                <span class="block text-slate-500">{{ form.ignore_case.help_text }}</span>
+                            {% endif %}
+                            {% if form.ignore_case.errors %}
+                                <span class="block text-red-600">{{ form.ignore_case.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_punctuation.id_for_label }}">
+                        {{ form.ignore_punctuation }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.ignore_punctuation.label }}</span>
+                            {% if form.ignore_punctuation.help_text %}
+                                <span class="block text-slate-500">{{ form.ignore_punctuation.help_text }}</span>
+                            {% endif %}
+                            {% if form.ignore_punctuation.errors %}
+                                <span class="block text-red-600">{{ form.ignore_punctuation.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_whitespace.id_for_label }}">
+                        {{ form.ignore_whitespace }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.ignore_whitespace.label }}</span>
+                            {% if form.ignore_whitespace.help_text %}
+                                <span class="block text-slate-500">{{ form.ignore_whitespace.help_text }}</span>
+                            {% endif %}
+                            {% if form.ignore_whitespace.errors %}
+                                <span class="block text-red-600">{{ form.ignore_whitespace.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                </fieldset>
+                <fieldset class="mt-4 space-y-2">
+                    <legend class="text-sm font-semibold text-slate-700">URL handling</legend>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_protocol.id_for_label }}">
+                        {{ form.ignore_protocol }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.ignore_protocol.label }}</span>
+                            {% if form.ignore_protocol.help_text %}
+                                <span class="block text-slate-500">{{ form.ignore_protocol.help_text }}</span>
+                            {% endif %}
+                            {% if form.ignore_protocol.errors %}
+                                <span class="block text-red-600">{{ form.ignore_protocol.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.normalize_trailing_slash.id_for_label }}">
+                        {{ form.normalize_trailing_slash }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.normalize_trailing_slash.label }}</span>
+                            {% if form.normalize_trailing_slash.help_text %}
+                                <span class="block text-slate-500">{{ form.normalize_trailing_slash.help_text }}</span>
+                            {% endif %}
+                            {% if form.normalize_trailing_slash.errors %}
+                                <span class="block text-red-600">{{ form.normalize_trailing_slash.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.drop_tracking_params.id_for_label }}">
+                        {{ form.drop_tracking_params }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.drop_tracking_params.label }}</span>
+                            {% if form.drop_tracking_params.help_text %}
+                                <span class="block text-slate-500">{{ form.drop_tracking_params.help_text }}</span>
+                            {% endif %}
+                            {% if form.drop_tracking_params.errors %}
+                                <span class="block text-red-600">{{ form.drop_tracking_params.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.lowercase_host.id_for_label }}">
+                        {{ form.lowercase_host }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.lowercase_host.label }}</span>
+                            {% if form.lowercase_host.help_text %}
+                                <span class="block text-slate-500">{{ form.lowercase_host.help_text }}</span>
+                            {% endif %}
+                            {% if form.lowercase_host.errors %}
+                                <span class="block text-red-600">{{ form.lowercase_host.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_url_fragments.id_for_label }}">
+                        {{ form.ignore_url_fragments }}
+                        <span class="leading-5">
+                            <span class="font-medium">{{ form.ignore_url_fragments.label }}</span>
+                            {% if form.ignore_url_fragments.help_text %}
+                                <span class="block text-slate-500">{{ form.ignore_url_fragments.help_text }}</span>
+                            {% endif %}
+                            {% if form.ignore_url_fragments.errors %}
+                                <span class="block text-red-600">{{ form.ignore_url_fragments.errors|join:', ' }}</span>
+                            {% endif %}
+                        </span>
+                    </label>
+                </fieldset>
                 <div class="mt-4 flex items-center justify-between">
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded">Compare</button>
                     <p class="text-xs text-slate-500">Files are processed in-memory and removed after diffing.</p>

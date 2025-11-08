@@ -15,6 +15,7 @@ from .models import DiffResult
 from .serializers import DiffResultSerializer
 from .services import (
     DiffOptions,
+    DocumentParseError,
     export_diff_pdf,
     perform_comparison,
     store_diff_result,
@@ -40,7 +41,13 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
 
     options = DiffOptions.from_dict(form.cleaned_data)
     files = list(form.iter_files())
-    diff, filenames = perform_comparison(files, options)
+    try:
+        diff, filenames = perform_comparison(files, options)
+    except (DocumentParseError, ValueError) as exc:
+        form.add_error(None, str(exc))
+        status = 422 if request.headers.get("HX-Request") else 400
+        return render(request, "compare/upload.html", {"form": form}, status=status)
+
     saved = store_diff_result(diff, options, filenames)
 
     context = {
@@ -48,6 +55,7 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
         "summary": diff.summary,
         "diff_html": diff.html,
         "options": options,
+        "link_changes": diff.link_changes,
     }
     template = "compare/result.html"
 
@@ -69,6 +77,7 @@ def result_detail(request: HttpRequest, pk: str) -> HttpResponse:
         "summary": result.summary,
         "diff_html": result.diff_html,
         "options": result.options,
+        "link_changes": result.diff_json.get("linkChanges", []) if isinstance(result.diff_json, dict) else [],
     }
     return render(request, "compare/result.html", context)
 

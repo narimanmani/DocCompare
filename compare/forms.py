@@ -12,9 +12,54 @@ class DocCompareForm(forms.Form):
 
     doc_a = forms.FileField(label="Document A")
     doc_b = forms.FileField(label="Document B")
-    ignore_case = forms.BooleanField(required=False, initial=True)
-    ignore_punctuation = forms.BooleanField(required=False, initial=False)
-    ignore_whitespace = forms.BooleanField(required=False, initial=False)
+    ignore_case = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Ignore case differences",
+        help_text="Treat uppercase and lowercase characters as equal.",
+    )
+    ignore_punctuation = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Ignore punctuation",
+        help_text="Strip punctuation before computing the diff.",
+    )
+    ignore_whitespace = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Ignore extra whitespace",
+        help_text="Collapse repeated spaces and line breaks before diffing.",
+    )
+    ignore_protocol = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Ignore protocol (http/https)",
+        help_text="Treat http and https links as the same destination.",
+    )
+    normalize_trailing_slash = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Normalize trailing slash",
+        help_text="Consider /path and /path/ equivalent when comparing URLs.",
+    )
+    drop_tracking_params = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Drop tracking parameters",
+        help_text="Remove UTM and ad-tracking parameters before comparing URLs.",
+    )
+    lowercase_host = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Lowercase host name",
+        help_text="Compare host names case-insensitively.",
+    )
+    ignore_url_fragments = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Ignore URL fragments",
+        help_text="Strip #section fragments from links before comparing.",
+    )
 
     error_messages = {
         "invalid_extension": "Only .docx files are supported.",

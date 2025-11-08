@@ -5,6 +5,8 @@ django-environ==0.11.*
 docx2python==2.8.*
 python-docx==1.1.*
 diff-match-patch==20230430
+beautifulsoup4==4.12.*
+lxml==5.3.*
 whitenoise==6.7.*
 weasyprint==62.*
 pytest==8.*

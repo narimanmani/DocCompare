@@ -22,6 +22,7 @@
             <div class="lg:col-span-1">
                 {% include 'compare/_summary.html' %}
                 {% include 'compare/_controls.html' %}
+                {% include 'compare/_link_changes.html' %}
             </div>
             <article class="lg:col-span-2 bg-white shadow rounded p-4 overflow-auto">
                 <div class="prose max-w-none" aria-live="polite">
@@ -30,5 +31,33 @@
             </article>
         </section>
     </main>
+    <script>
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest('.copy-link-button');
+            if (!button) {
+                return;
+            }
+            const text = button.getAttribute('data-copy-text');
+            if (!text) {
+                return;
+            }
+            event.preventDefault();
+            const original = button.getAttribute('data-original-content') || button.innerHTML;
+            const applyCopiedState = function () {
+                button.innerHTML = '✅ Copied!';
+                button.setAttribute('data-original-content', original);
+                button.classList.add('bg-emerald-600');
+                setTimeout(function () {
+                    button.innerHTML = original;
+                    button.classList.remove('bg-emerald-600');
+                }, 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(applyCopiedState).catch(applyCopiedState);
+            } else {
+                applyCopiedState();
+            }
+        });
+    </script>
 </body>
 </html>

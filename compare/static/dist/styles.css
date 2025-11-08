@@ -5,3 +5,18 @@
 .prose .diff-ins { background-color: #d1fae5; }
 .diff-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 .diff-table th, .diff-table td { border: 1px solid #e2e8f0; vertical-align: top; padding: 0.5rem; }
+.diff-link { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.35rem; border-radius: 0.5rem; text-decoration: none; }
+.diff-link .diff-link-text { max-width: 20ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.diff-link-icon { font-size: 0.75rem; }
+.diff-link.link-added { background-color: #ecfdf5; color: #047857; }
+.diff-link.link-removed { background-color: #fef2f2; color: #b91c1c; text-decoration: line-through; }
+.diff-link.link-href-changed,
+.diff-link.link-text-changed,
+.diff-link.link-replaced { background-color: #eef2ff; color: #4338ca; }
+.diff-link.link-href-changed-right,
+.diff-link.link-href-changed-left { box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.25); }
+.diff-link.link-text-changed-left,
+.diff-link.link-text-changed-right { box-shadow: inset 0 0 0 1px rgba(234, 179, 8, 0.35); }
+.diff-link.link-replaced-left,
+.diff-link.link-replaced-right { box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.35); }
+.copy-link-button.bg-emerald-600 { background-color: #059669 !important; }

@@ -4,3 +4,4 @@ libcairo2
 libffi8
 libgdk-pixbuf-2.0-0
 libharfbuzz0b
+pandoc
