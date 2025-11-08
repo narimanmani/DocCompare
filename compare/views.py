@@ -97,7 +97,11 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
     if persisted and saved is not None:
         return redirect("compare:result", pk=saved.pk)
 
-    return render(request, "compare/result.html", context, status=503)
+    # Even if persistence fails we still want to present the computed diff so that
+    # users can inspect the comparison result. Returning a non-success status would
+    # cause htmx and standard form submissions to treat the response as an error,
+    # preventing the UI from updating with the helpful storage message.
+    return render(request, "compare/result.html", context)
 
 
 @require_GET
