@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +13,12 @@ from django.db import transaction
 from django.utils.html import escape
 
 from .diff_utils import DiffComputationResult, DiffOptions as EngineOptions, build_diff
+from .html_tokens import Paragraph, paragraphs_from_html, paragraphs_from_text
 from .models import DiffResult
+from .url_utils import UrlNormalizationOptions
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -21,6 +28,11 @@ class DiffOptions:
     ignore_case: bool = True
     ignore_punctuation: bool = False
     ignore_whitespace: bool = False
+    ignore_protocol: bool = False
+    normalize_trailing_slash: bool = False
+    drop_tracking_params: bool = True
+    lowercase_host: bool = False
+    ignore_url_fragments: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, bool]) -> "DiffOptions":
@@ -29,6 +41,11 @@ class DiffOptions:
             ignore_case=bool(data.get("ignore_case", False)),
             ignore_punctuation=bool(data.get("ignore_punctuation", False)),
             ignore_whitespace=bool(data.get("ignore_whitespace", False)),
+            ignore_protocol=bool(data.get("ignore_protocol", False)),
+            normalize_trailing_slash=bool(data.get("normalize_trailing_slash", False)),
+            drop_tracking_params=bool(data.get("drop_tracking_params", False)),
+            lowercase_host=bool(data.get("lowercase_host", False)),
+            ignore_url_fragments=bool(data.get("ignore_url_fragments", False)),
         )
 
     def as_dict(self) -> dict[str, bool]:
@@ -36,7 +53,21 @@ class DiffOptions:
             "ignore_case": self.ignore_case,
             "ignore_punctuation": self.ignore_punctuation,
             "ignore_whitespace": self.ignore_whitespace,
+            "ignore_protocol": self.ignore_protocol,
+            "normalize_trailing_slash": self.normalize_trailing_slash,
+            "drop_tracking_params": self.drop_tracking_params,
+            "lowercase_host": self.lowercase_host,
+            "ignore_url_fragments": self.ignore_url_fragments,
         }
+
+    def url_options(self) -> UrlNormalizationOptions:
+        return UrlNormalizationOptions(
+            ignore_protocol=self.ignore_protocol,
+            normalize_trailing_slash=self.normalize_trailing_slash,
+            lowercase_host=self.lowercase_host,
+            drop_tracking_params=self.drop_tracking_params,
+            strip_fragment=self.ignore_url_fragments,
+        )
 
 
 class DocumentParseError(RuntimeError):
@@ -91,25 +122,52 @@ def _parse_with_python_docx(path: Path) -> list[str]:
     return paragraphs
 
 
-def parse_docx_bytes(data: bytes) -> list[str]:
-    """Parse a DOCX file into a list of paragraphs."""
+def _parse_with_pandoc(path: Path) -> list[Paragraph] | None:
+    try:
+        completed = subprocess.run(
+            ["pandoc", str(path), "-t", "html"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        logger.warning("Pandoc is not installed; falling back to plain-text parsing.")
+        return None
+    except subprocess.CalledProcessError as exc:
+        logger.warning("Pandoc conversion failed: %s", exc.stderr or exc)
+        return None
+
+    paragraphs = paragraphs_from_html(completed.stdout)
+    if not paragraphs:
+        logger.warning("Pandoc produced no paragraphs; falling back to plain-text parsing.")
+        return None
+    return paragraphs
+
+
+def parse_docx_bytes(data: bytes) -> list[Paragraph]:
+    """Parse a DOCX file into structured paragraphs."""
 
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_file:
         tmp_file.write(data)
         tmp_path = Path(tmp_file.name)
     try:
+        paragraphs = _parse_with_pandoc(tmp_path)
+        if paragraphs is not None:
+            return paragraphs
+
         try:
-            return _parse_with_docx2python(tmp_path)
+            text_blocks = _parse_with_docx2python(tmp_path)
         except Exception:
-            return _parse_with_python_docx(tmp_path)
+            text_blocks = _parse_with_python_docx(tmp_path)
+        return paragraphs_from_text(text_blocks)
     finally:
         tmp_path.unlink(missing_ok=True)
 
 
-def parse_multiple(files: Iterable[tuple[str, bytes]]) -> tuple[list[str], list[str], list[str]]:
+def parse_multiple(files: Iterable[tuple[str, bytes]]) -> tuple[list[Paragraph], list[Paragraph], list[str]]:
     """Return paragraphs for two files and their original names."""
 
-    paragraphs: list[list[str]] = []
+    paragraphs: list[list[Paragraph]] = []
     filenames: list[str] = []
     for name, content in files:
         try:
@@ -147,7 +205,8 @@ def perform_comparison(
         ignore_punctuation=options.ignore_punctuation,
         ignore_whitespace=options.ignore_whitespace,
     )
-    return build_diff(paragraphs_a, paragraphs_b, engine_options), filenames
+    url_options = options.url_options()
+    return build_diff(paragraphs_a, paragraphs_b, engine_options, url_options), filenames
 
 
 def render_diff_preview(diff: DiffComputationResult) -> str:

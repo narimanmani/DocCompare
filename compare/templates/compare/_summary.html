@@ -18,4 +18,25 @@
             <dd class="font-semibold">{{ summary.percent_changed }}%</dd>
         </div>
     </dl>
+    <div class="pt-3 border-t border-slate-200">
+        <h3 class="text-sm font-semibold text-slate-600 mb-2">Link changes</h3>
+        <dl class="grid grid-cols-2 gap-2 text-sm">
+            <div>
+                <dt class="text-slate-500">Links added</dt>
+                <dd class="font-semibold text-emerald-600">{{ summary.links_added }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Links removed</dt>
+                <dd class="font-semibold text-rose-600">{{ summary.links_removed }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Link text updated</dt>
+                <dd class="font-semibold">{{ summary.links_changed_text }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500">Link targets updated</dt>
+                <dd class="font-semibold">{{ summary.links_changed_href }}</dd>
+            </div>
+        </dl>
+    </div>
 </section>
