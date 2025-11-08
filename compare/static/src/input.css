@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.prose .diff-del {
+    @apply bg-rose-100;
+}
+
+.prose .diff-ins {
+    @apply bg-emerald-100;
+}
+
+.diff-table {
+    @apply w-full border border-slate-200 text-sm;
+}
+
+.diff-table th,
+.diff-table td {
+    @apply border border-slate-200 align-top p-2;
+}
+
+.diff-replace {
+    @apply bg-amber-50;
+}

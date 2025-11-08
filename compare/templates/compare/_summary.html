@@ -1,0 +1,21 @@
+<section class="bg-white shadow rounded p-4 space-y-3">
+    <h2 class="text-xl font-semibold">Summary</h2>
+    <dl class="grid grid-cols-2 gap-2 text-sm">
+        <div>
+            <dt class="text-slate-500">Insertions</dt>
+            <dd class="font-semibold text-emerald-600">{{ summary.insertions }}</dd>
+        </div>
+        <div>
+            <dt class="text-slate-500">Deletions</dt>
+            <dd class="font-semibold text-rose-600">{{ summary.deletions }}</dd>
+        </div>
+        <div>
+            <dt class="text-slate-500">Replacements</dt>
+            <dd class="font-semibold">{{ summary.replacements }}</dd>
+        </div>
+        <div>
+            <dt class="text-slate-500">Percent changed</dt>
+            <dd class="font-semibold">{{ summary.percent_changed }}%</dd>
+        </div>
+    </dl>
+</section>

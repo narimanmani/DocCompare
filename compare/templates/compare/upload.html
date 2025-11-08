@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>DocDiff &mdash; Upload</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12" defer></script>
+    <link rel="stylesheet" href="{% static 'dist/styles.css' %}">
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <main class="max-w-4xl mx-auto py-10 px-6 space-y-8">
+        <header class="space-y-2">
+            <h1 class="text-3xl font-bold">DOCX Diff</h1>
+            <p class="text-slate-600">Upload two Word documents to generate a highlighted diff.</p>
+        </header>
+        <section class="bg-white shadow rounded p-6">
+            <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="innerHTML">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-4">
+                    {% for field in form %}
+                        <div>
+                            <label class="block text-sm font-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <p class="text-sm text-red-600">{{ field.errors|join:', ' }}</p>
+                            {% elif field.help_text %}
+                                <p class="text-sm text-slate-500">{{ field.help_text }}</p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded">Compare</button>
+                    <p class="text-xs text-slate-500">Files are processed in-memory and removed after diffing.</p>
+                </div>
+            </form>
+        </section>
+        <section id="result"></section>
+    </main>
+</body>
+</html>
