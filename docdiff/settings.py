@@ -60,13 +60,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "docdiff.wsgi.application"
 ASGI_APPLICATION = "docdiff.asgi.application"
 
-# Database (SQLite for Heroku demo)
+# Database configuration
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
 }
+
+# Enable persistent connections for Postgres deployments (e.g., Heroku)
+engine = DATABASES["default"].get("ENGINE", "")
+if engine.startswith("django.db.backends.postgresql"):
+    DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

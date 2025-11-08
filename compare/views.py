@@ -1,11 +1,14 @@
 """Views for document comparison and result presentation."""
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 
+from django.db import DatabaseError
 from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -19,6 +22,15 @@ from .services import (
     export_diff_pdf,
     perform_comparison,
     store_diff_result,
+)
+
+
+logger = logging.getLogger(__name__)
+
+
+STORAGE_ERROR_MESSAGE = (
+    "We couldn't save this comparison because the database isn't available. "
+    "Configure the DATABASE_URL environment variable and run migrations to enable saved results and downloads."
 )
 
 
@@ -48,7 +60,17 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
         status = 422 if request.headers.get("HX-Request") else 400
         return render(request, "compare/upload.html", {"form": form}, status=status)
 
-    saved = store_diff_result(diff, options, filenames)
+    persisted = True
+    storage_error: str | None = None
+    saved: DiffResult | None = None
+    try:
+        saved = store_diff_result(diff, options, filenames)
+    except DatabaseError as exc:
+        persisted = False
+        storage_error = STORAGE_ERROR_MESSAGE
+        logger.warning("Failed to store diff result: %s", exc, exc_info=exc)
+
+    generated_at = saved.created_at if saved else timezone.now()
 
     context = {
         "result": saved,
@@ -56,15 +78,23 @@ def compare_documents(request: HttpRequest) -> HttpResponse:
         "diff_html": diff.html,
         "options": options,
         "link_changes": diff.link_changes,
+        "filenames": list(filenames),
+        "generated_at": generated_at,
+        "persisted": persisted and saved is not None,
+        "storage_error": storage_error,
     }
-    template = "compare/result.html"
 
     if request.headers.get("HX-Request"):
-        response = render(request, template, context)
-        response["HX-Redirect"] = reverse("compare:result", args=[saved.pk])
-        return response
+        if persisted and saved is not None:
+            response = render(request, "compare/result.html", context)
+            response["HX-Redirect"] = reverse("compare:result", args=[saved.pk])
+            return response
+        return render(request, "compare/result_section.html", context)
 
-    return redirect("compare:result", pk=saved.pk)
+    if persisted and saved is not None:
+        return redirect("compare:result", pk=saved.pk)
+
+    return render(request, "compare/result.html", context, status=503)
 
 
 @require_GET
@@ -78,6 +108,10 @@ def result_detail(request: HttpRequest, pk: str) -> HttpResponse:
         "diff_html": result.diff_html,
         "options": result.options,
         "link_changes": result.diff_json.get("linkChanges", []) if isinstance(result.diff_json, dict) else [],
+        "filenames": result.source_filenames,
+        "generated_at": result.created_at,
+        "persisted": True,
+        "storage_error": None,
     }
     return render(request, "compare/result.html", context)
 
