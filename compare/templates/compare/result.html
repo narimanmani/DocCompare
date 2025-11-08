@@ -4,60 +4,13 @@
 <head>
     <meta charset="utf-8">
     <title>DocDiff &mdash; Result</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css">
     <link rel="stylesheet" href="{% static 'dist/styles.css' %}">
+    <script src="{% static 'dist/app.js' %}" defer></script>
 </head>
 <body class="bg-slate-100 text-slate-900">
-    <main class="max-w-6xl mx-auto py-10 px-6 space-y-6">
-        <header class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold">Comparison Result</h1>
-                <p class="text-slate-600">Generated on {{ result.created_at|date:"SHORT_DATETIME_FORMAT" }}</p>
-            </div>
-            <div class="space-x-2">
-                <a href="{% url 'compare:upload' %}" class="bg-slate-200 hover:bg-slate-300 px-3 py-2 rounded">New comparison</a>
-                <a href="{% url 'compare:export-pdf' result.pk %}" class="bg-indigo-600 text-white px-3 py-2 rounded">Export PDF</a>
-            </div>
-        </header>
-        <section class="grid lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1">
-                {% include 'compare/_summary.html' %}
-                {% include 'compare/_controls.html' %}
-                {% include 'compare/_link_changes.html' %}
-            </div>
-            <article class="lg:col-span-2 bg-white shadow rounded p-4 overflow-auto">
-                <div class="prose max-w-none" aria-live="polite">
-                    {{ diff_html|safe }}
-                </div>
-            </article>
-        </section>
+    <main class="mx-auto max-w-6xl space-y-6 px-6 py-10">
+        {% include 'compare/_result_content.html' %}
     </main>
-    <script>
-        document.addEventListener('click', function (event) {
-            const button = event.target.closest('.copy-link-button');
-            if (!button) {
-                return;
-            }
-            const text = button.getAttribute('data-copy-text');
-            if (!text) {
-                return;
-            }
-            event.preventDefault();
-            const original = button.getAttribute('data-original-content') || button.innerHTML;
-            const applyCopiedState = function () {
-                button.innerHTML = '✅ Copied!';
-                button.setAttribute('data-original-content', original);
-                button.classList.add('bg-emerald-600');
-                setTimeout(function () {
-                    button.innerHTML = original;
-                    button.classList.remove('bg-emerald-600');
-                }, 1500);
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(applyCopiedState).catch(applyCopiedState);
-            } else {
-                applyCopiedState();
-            }
-        });
-    </script>
 </body>
 </html>

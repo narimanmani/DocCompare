@@ -1,5 +1,5 @@
-/* Tailwind build placeholder. Run `make tailwind` to regenerate. */
-@import "https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css";
+/* Tailwind utilities are loaded from the CDN in templates.
+   Run `make tailwind` to regenerate custom styles. */
 
 .prose .diff-del { background-color: #fee2e2; }
 .prose .diff-ins { background-color: #d1fae5; }

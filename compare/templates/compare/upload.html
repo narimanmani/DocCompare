@@ -6,7 +6,9 @@
     <title>DocDiff &mdash; Upload</title>
     <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.12" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css">
     <link rel="stylesheet" href="{% static 'dist/styles.css' %}">
+    <script src="{% static 'dist/app.js' %}" defer></script>
 </head>
 <body class="bg-slate-100 text-slate-900">
     <main class="max-w-4xl mx-auto py-10 px-6 space-y-8">
@@ -15,7 +17,7 @@
             <p class="text-slate-600">Upload two Word documents to generate a highlighted diff.</p>
         </header>
         <section class="bg-white shadow rounded p-6">
-            <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="innerHTML">
+            <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="outerHTML">
                 {% csrf_token %}
                 {% if form.non_field_errors %}
                     <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -143,7 +145,9 @@
                 </div>
             </form>
         </section>
-        <section id="result"></section>
+        <section id="result" class="rounded border border-dashed border-slate-300 bg-white/60 p-6 text-center text-slate-500">
+            <p class="text-sm">Your comparison result will appear here.</p>
+        </section>
     </main>
 </body>
 </html>

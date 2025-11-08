@@ -4,11 +4,13 @@ from io import BytesIO
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import DatabaseError
 from django.urls import reverse
 from docx import Document
 from io import BytesIO
 
 from compare.services import DocumentParseError
+from compare.views import STORAGE_ERROR_MESSAGE
 
 
 def _docx_bytes(paragraphs: list[str]) -> bytes:
@@ -81,3 +83,65 @@ def test_compare_view_handles_parse_errors(client, monkeypatch) -> None:
 
     assert response.status_code == 400
     assert b"Unable to parse a.docx" in response.content
+
+
+@pytest.mark.django_db
+def test_compare_view_htmx_redirects_on_success(client) -> None:
+    first = SimpleUploadedFile(
+        "a.docx",
+        _docx_bytes(["Hello"]),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    second = SimpleUploadedFile(
+        "b.docx",
+        _docx_bytes(["World"]),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+
+    response = client.post(
+        reverse("compare:compare"),
+        data={
+            "doc_a": first,
+            "doc_b": second,
+        },
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    assert response.headers.get("HX-Redirect", "").startswith("/result/")
+
+
+@pytest.mark.django_db
+def test_compare_view_htmx_returns_partial_when_storage_fails(client, monkeypatch) -> None:
+    first = SimpleUploadedFile(
+        "a.docx",
+        _docx_bytes(["Hello"]),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+    second = SimpleUploadedFile(
+        "b.docx",
+        _docx_bytes(["World"]),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+
+    def _raise_storage_error(*_args, **_kwargs):
+        raise DatabaseError("database offline")
+
+    monkeypatch.setattr("compare.views.store_diff_result", _raise_storage_error)
+
+    response = client.post(
+        reverse("compare:compare"),
+        data={
+            "doc_a": first,
+            "doc_b": second,
+        },
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    assert response.headers.get("HX-Redirect") is None
+    from html import unescape
+
+    content = unescape(response.content.decode())
+    assert STORAGE_ERROR_MESSAGE in content
+    assert "Your comparison result will appear here" not in content
