@@ -1,45 +1,38 @@
-{% if storage_error %}
-<div class="rounded border-l-4 border-amber-400 bg-amber-50 p-4 text-sm text-amber-900">
-    <p class="font-semibold">Unable to save result</p>
-    <p>{{ storage_error }}</p>
-</div>
-{% endif %}
-<header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-    <div class="space-y-1">
-        <h1 class="text-3xl font-bold">Comparison Result</h1>
-        <p class="text-slate-600">Generated on {{ generated_at|date:"SHORT_DATETIME_FORMAT" }}</p>
-        {% if filenames %}
-            <p class="text-sm text-slate-500">Comparing <span class="font-medium">{{ filenames.0 }}</span> ↔
-                <span class="font-medium">{{ filenames.1 }}</span></p>
-        {% endif %}
+<div class="app-card app-result-card">
+    {% if storage_error %}
+    <div class="app-banner app-banner--warning">
+        <p class="app-banner-title">Unable to save result</p>
+        <p>{{ storage_error }}</p>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
-        <a href="{% url 'compare:upload' %}"
-           class="inline-flex items-center rounded bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-300">
-            New comparison
-        </a>
-        {% if persisted and result %}
-            <a href="{% url 'compare:export-pdf' result.pk %}"
-               class="inline-flex items-center rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-                Export PDF
-            </a>
-        {% else %}
-            <span class="inline-flex cursor-not-allowed items-center rounded bg-slate-200 px-3 py-2 text-sm font-semibold text-slate-500"
-                  title="Configure the database to enable saved results and downloads.">
-                Export unavailable
-            </span>
-        {% endif %}
-    </div>
-</header>
-<section class="grid gap-6 lg:grid-cols-3">
-    <div class="space-y-4 lg:col-span-1">
-        {% include 'compare/_summary.html' %}
-        {% include 'compare/_controls.html' %}
-        {% include 'compare/_link_changes.html' %}
-    </div>
-    <article class="lg:col-span-2 overflow-auto rounded bg-white p-4 shadow">
-        <div class="prose max-w-none" aria-live="polite">
-            {{ diff_html|safe }}
+    {% endif %}
+    <header class="app-result-header">
+        <div>
+            <p class="app-eyebrow">Comparison summary</p>
+            <h1 class="app-result-title">Your diff is ready</h1>
+            <p class="app-result-meta">Generated on {{ generated_at|date:"SHORT_DATETIME_FORMAT" }}</p>
+            {% if filenames %}
+                <p class="app-result-meta app-result-meta--pair">Comparing <span>{{ filenames.0 }}</span> ↔ <span>{{ filenames.1 }}</span></p>
+            {% endif %}
         </div>
-    </article>
-</section>
+        <div class="app-result-actions">
+            <a href="{% url 'compare:upload' %}" class="app-button app-button--subtle">New comparison</a>
+            {% if persisted and result %}
+                <a href="{% url 'compare:export-pdf' result.pk %}" class="app-button app-button--secondary">Export PDF</a>
+            {% else %}
+                <span class="app-button app-button--disabled" title="Configure the database to enable saved results and downloads.">Export unavailable</span>
+            {% endif %}
+        </div>
+    </header>
+    <section class="app-result-layout">
+        <div class="app-result-sidebar">
+            {% include 'compare/_summary.html' %}
+            {% include 'compare/_controls.html' %}
+            {% include 'compare/_link_changes.html' %}
+        </div>
+        <article class="app-result-diff" aria-live="polite">
+            <div class="prose app-prose max-w-none">
+                {{ diff_html|safe }}
+            </div>
+        </article>
+    </section>
+</div>

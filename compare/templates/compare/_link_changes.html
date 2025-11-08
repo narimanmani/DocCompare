@@ -1,11 +1,11 @@
 {% if link_changes %}
-<section class="bg-white shadow rounded p-4 space-y-3 mt-4">
-    <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold flex items-center gap-2"><span aria-hidden="true">🔗</span> Link updates</h2>
-        <p class="text-xs text-slate-500">{{ link_changes|length }} change{{ link_changes|length|pluralize }}</p>
+<section class="app-panel">
+    <div class="app-panel-heading app-panel-heading--row">
+        <h2 class="app-panel-title"><span aria-hidden="true">🔗</span> Link updates</h2>
+        <span class="app-count-pill">{{ link_changes|length }} change{{ link_changes|length|pluralize }}</span>
     </div>
-    <p class="text-sm text-slate-600">Link-only differences are grouped here so you can review URL changes quickly.</p>
-    <ul class="space-y-2">
+    <p class="app-panel-subtitle">Link-only differences are grouped here so you can review URL changes quickly.</p>
+    <ul class="app-link-change-list">
         {% for change in link_changes %}
             {% if change.type == 'link-added' %}
                 {% with label='Link added' icon='➕' %}{% include 'compare/_link_change_item.html' %}{% endwith %}
@@ -24,8 +24,10 @@
     </ul>
 </section>
 {% else %}
-<section class="bg-white shadow rounded p-4 space-y-2 mt-4">
-    <h2 class="text-xl font-semibold flex items-center gap-2"><span aria-hidden="true">🔗</span> Link updates</h2>
-    <p class="text-sm text-slate-600">No link-only changes detected.</p>
+<section class="app-panel">
+    <div class="app-panel-heading">
+        <h2 class="app-panel-title"><span aria-hidden="true">🔗</span> Link updates</h2>
+        <p class="app-panel-subtitle">No link-only changes detected.</p>
+    </div>
 </section>
 {% endif %}

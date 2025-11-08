@@ -66,6 +66,24 @@ class DocCompareForm(forms.Form):
         "max_size": "Files must be smaller than 15MB.",
     }
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        file_attrs = {"class": "app-input"}
+        checkbox_attrs = {"class": "app-checkbox"}
+        for name in ("doc_a", "doc_b"):
+            self.fields[name].widget.attrs.update(file_attrs)
+        for name in (
+            "ignore_case",
+            "ignore_punctuation",
+            "ignore_whitespace",
+            "ignore_protocol",
+            "normalize_trailing_slash",
+            "drop_tracking_params",
+            "lowercase_host",
+            "ignore_url_fragments",
+        ):
+            self.fields[name].widget.attrs.update(checkbox_attrs)
+
     def clean(self) -> dict[str, object]:
         cleaned_data = super().clean()
         for field in ("doc_a", "doc_b"):

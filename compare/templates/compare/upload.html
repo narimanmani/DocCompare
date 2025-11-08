@@ -4,149 +4,167 @@
 <head>
     <meta charset="utf-8">
     <title>DocDiff &mdash; Upload</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.10" defer></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.12" defer></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css">
     <link rel="stylesheet" href="{% static 'dist/styles.css' %}">
     <script src="{% static 'dist/app.js' %}" defer></script>
 </head>
-<body class="bg-slate-100 text-slate-900">
-    <main class="max-w-4xl mx-auto py-10 px-6 space-y-8">
-        <header class="space-y-2">
-            <h1 class="text-3xl font-bold">DOCX Diff</h1>
-            <p class="text-slate-600">Upload two Word documents to generate a highlighted diff.</p>
+<body class="app-body">
+    <div class="app-backdrop" aria-hidden="true"></div>
+    <main class="app-shell">
+        <header class="app-header">
+            <div>
+                <p class="app-eyebrow">DOCX Diff</p>
+                <h1 class="app-title">Compare Word documents with confidence</h1>
+            </div>
+            <p class="app-subtitle">Upload two DOCX files and DocDiff will produce a polished change report with highlighted insertions, deletions, and URL updates.</p>
         </header>
-        <section class="bg-white shadow rounded p-6">
-            <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="outerHTML">
+        <section class="app-card">
+            <form id="compare-form" method="post" enctype="multipart/form-data" hx-post="{% url 'compare:compare' %}" hx-target="#result" hx-swap="outerHTML" hx-encoding="multipart/form-data" hx-indicator="#compare-indicator" class="app-form">
                 {% csrf_token %}
                 {% if form.non_field_errors %}
-                    <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    <div class="app-alert">
                         {{ form.non_field_errors|join:' ' }}
                     </div>
                 {% endif %}
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="app-form-grid">
                     {% for field in form|slice:':2' %}
                         <div>
-                            <label class="block text-sm font-semibold mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            <label class="app-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
                             {% if field.errors %}
-                                <p class="text-sm text-red-600">{{ field.errors|join:', ' }}</p>
+                                <p class="app-field-error">{{ field.errors|join:', ' }}</p>
                             {% elif field.help_text %}
-                                <p class="text-sm text-slate-500">{{ field.help_text }}</p>
+                                <p class="app-help-text">{{ field.help_text }}</p>
                             {% endif %}
                         </div>
                     {% endfor %}
                 </div>
-                <fieldset class="mt-4 space-y-2">
-                    <legend class="text-sm font-semibold text-slate-700">Text normalization</legend>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_case.id_for_label }}">
+                <fieldset class="app-option-group">
+                    <legend class="app-option-title">Text normalization</legend>
+                    <label class="app-option" for="{{ form.ignore_case.id_for_label }}">
                         {{ form.ignore_case }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.ignore_case.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.ignore_case.label }}</span>
                             {% if form.ignore_case.help_text %}
-                                <span class="block text-slate-500">{{ form.ignore_case.help_text }}</span>
+                                <span class="app-help-text">{{ form.ignore_case.help_text }}</span>
                             {% endif %}
                             {% if form.ignore_case.errors %}
-                                <span class="block text-red-600">{{ form.ignore_case.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.ignore_case.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_punctuation.id_for_label }}">
+                    <label class="app-option" for="{{ form.ignore_punctuation.id_for_label }}">
                         {{ form.ignore_punctuation }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.ignore_punctuation.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.ignore_punctuation.label }}</span>
                             {% if form.ignore_punctuation.help_text %}
-                                <span class="block text-slate-500">{{ form.ignore_punctuation.help_text }}</span>
+                                <span class="app-help-text">{{ form.ignore_punctuation.help_text }}</span>
                             {% endif %}
                             {% if form.ignore_punctuation.errors %}
-                                <span class="block text-red-600">{{ form.ignore_punctuation.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.ignore_punctuation.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_whitespace.id_for_label }}">
+                    <label class="app-option" for="{{ form.ignore_whitespace.id_for_label }}">
                         {{ form.ignore_whitespace }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.ignore_whitespace.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.ignore_whitespace.label }}</span>
                             {% if form.ignore_whitespace.help_text %}
-                                <span class="block text-slate-500">{{ form.ignore_whitespace.help_text }}</span>
+                                <span class="app-help-text">{{ form.ignore_whitespace.help_text }}</span>
                             {% endif %}
                             {% if form.ignore_whitespace.errors %}
-                                <span class="block text-red-600">{{ form.ignore_whitespace.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.ignore_whitespace.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
                 </fieldset>
-                <fieldset class="mt-4 space-y-2">
-                    <legend class="text-sm font-semibold text-slate-700">URL handling</legend>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_protocol.id_for_label }}">
+                <fieldset class="app-option-group">
+                    <legend class="app-option-title">URL handling</legend>
+                    <label class="app-option" for="{{ form.ignore_protocol.id_for_label }}">
                         {{ form.ignore_protocol }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.ignore_protocol.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.ignore_protocol.label }}</span>
                             {% if form.ignore_protocol.help_text %}
-                                <span class="block text-slate-500">{{ form.ignore_protocol.help_text }}</span>
+                                <span class="app-help-text">{{ form.ignore_protocol.help_text }}</span>
                             {% endif %}
                             {% if form.ignore_protocol.errors %}
-                                <span class="block text-red-600">{{ form.ignore_protocol.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.ignore_protocol.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.normalize_trailing_slash.id_for_label }}">
+                    <label class="app-option" for="{{ form.normalize_trailing_slash.id_for_label }}">
                         {{ form.normalize_trailing_slash }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.normalize_trailing_slash.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.normalize_trailing_slash.label }}</span>
                             {% if form.normalize_trailing_slash.help_text %}
-                                <span class="block text-slate-500">{{ form.normalize_trailing_slash.help_text }}</span>
+                                <span class="app-help-text">{{ form.normalize_trailing_slash.help_text }}</span>
                             {% endif %}
                             {% if form.normalize_trailing_slash.errors %}
-                                <span class="block text-red-600">{{ form.normalize_trailing_slash.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.normalize_trailing_slash.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.drop_tracking_params.id_for_label }}">
+                    <label class="app-option" for="{{ form.drop_tracking_params.id_for_label }}">
                         {{ form.drop_tracking_params }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.drop_tracking_params.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.drop_tracking_params.label }}</span>
                             {% if form.drop_tracking_params.help_text %}
-                                <span class="block text-slate-500">{{ form.drop_tracking_params.help_text }}</span>
+                                <span class="app-help-text">{{ form.drop_tracking_params.help_text }}</span>
                             {% endif %}
                             {% if form.drop_tracking_params.errors %}
-                                <span class="block text-red-600">{{ form.drop_tracking_params.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.drop_tracking_params.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.lowercase_host.id_for_label }}">
+                    <label class="app-option" for="{{ form.lowercase_host.id_for_label }}">
                         {{ form.lowercase_host }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.lowercase_host.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.lowercase_host.label }}</span>
                             {% if form.lowercase_host.help_text %}
-                                <span class="block text-slate-500">{{ form.lowercase_host.help_text }}</span>
+                                <span class="app-help-text">{{ form.lowercase_host.help_text }}</span>
                             {% endif %}
                             {% if form.lowercase_host.errors %}
-                                <span class="block text-red-600">{{ form.lowercase_host.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.lowercase_host.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
-                    <label class="flex items-start gap-2 text-sm" for="{{ form.ignore_url_fragments.id_for_label }}">
+                    <label class="app-option" for="{{ form.ignore_url_fragments.id_for_label }}">
                         {{ form.ignore_url_fragments }}
-                        <span class="leading-5">
-                            <span class="font-medium">{{ form.ignore_url_fragments.label }}</span>
+                        <span>
+                            <span class="app-option-label">{{ form.ignore_url_fragments.label }}</span>
                             {% if form.ignore_url_fragments.help_text %}
-                                <span class="block text-slate-500">{{ form.ignore_url_fragments.help_text }}</span>
+                                <span class="app-help-text">{{ form.ignore_url_fragments.help_text }}</span>
                             {% endif %}
                             {% if form.ignore_url_fragments.errors %}
-                                <span class="block text-red-600">{{ form.ignore_url_fragments.errors|join:', ' }}</span>
+                                <span class="app-field-error">{{ form.ignore_url_fragments.errors|join:', ' }}</span>
                             {% endif %}
                         </span>
                     </label>
                 </fieldset>
-                <div class="mt-4 flex items-center justify-between">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded">Compare</button>
-                    <p class="text-xs text-slate-500">Files are processed in-memory and removed after diffing.</p>
+                <div class="app-form-footer">
+                    <div class="app-form-meta">
+                        <p class="app-help-text">Files are processed securely in-memory and discarded immediately after generating the diff.</p>
+                    </div>
+                    <div class="app-actions">
+                        <div id="compare-indicator" class="app-indicator" role="status" aria-live="polite">
+                            <span class="app-spinner" aria-hidden="true"></span>
+                            <span>Generating comparison&hellip;</span>
+                        </div>
+                        <button type="submit" class="app-button">Compare documents</button>
+                    </div>
                 </div>
             </form>
         </section>
-        <section id="result" class="rounded border border-dashed border-slate-300 bg-white/60 p-6 text-center text-slate-500">
-            <p class="text-sm">Your comparison result will appear here.</p>
+        <section id="result" class="app-card app-placeholder">
+            <div class="app-placeholder-content">
+                <h2>Awaiting your documents</h2>
+                <p>Upload two Word files to see a side-by-side comparison with detailed highlights and link analysis.</p>
+            </div>
         </section>
     </main>
 </body>

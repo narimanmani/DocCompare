@@ -1,54 +1,56 @@
-<section class="bg-white shadow rounded p-4 space-y-3 mt-4">
-    <h2 class="text-xl font-semibold">Options</h2>
-    <div class="space-y-3 text-sm">
-        <div>
-            <p class="font-semibold text-slate-600">Text normalization</p>
-            <ul class="mt-1 space-y-1">
-                <li>
-                    <span class="font-medium">Ignore case:</span>
-                    <span>{{ options.ignore_case|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Ignore punctuation:</span>
-                    <span>{{ options.ignore_punctuation|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Ignore whitespace:</span>
-                    <span>{{ options.ignore_whitespace|yesno:"Enabled,Disabled" }}</span>
-                </li>
-            </ul>
-        </div>
-        <div>
-            <p class="font-semibold text-slate-600">URL handling</p>
-            <ul class="mt-1 space-y-1">
-                <li>
-                    <span class="font-medium">Ignore protocol:</span>
-                    <span>{{ options.ignore_protocol|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Normalize trailing slash:</span>
-                    <span>{{ options.normalize_trailing_slash|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Drop tracking params:</span>
-                    <span>{{ options.drop_tracking_params|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Lowercase host:</span>
-                    <span>{{ options.lowercase_host|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
-                </li>
-                <li>
-                    <span class="font-medium">Ignore URL fragments:</span>
-                    <span>{{ options.ignore_url_fragments|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
-                </li>
-            </ul>
-        </div>
+<section class="app-panel">
+    <div class="app-panel-heading">
+        <h2 class="app-panel-title">Options</h2>
+        <p class="app-panel-subtitle">The settings applied to this comparison</p>
     </div>
-    <div>
+    <div class="app-option-summary">
+        <h3>Text normalization</h3>
+        <ul>
+            <li>
+                <span>Ignore case</span>
+                <span class="app-pill">{{ options.ignore_case|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Ignore punctuation</span>
+                <span class="app-pill">{{ options.ignore_punctuation|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Ignore whitespace</span>
+                <span class="app-pill">{{ options.ignore_whitespace|yesno:"Enabled,Disabled" }}</span>
+            </li>
+        </ul>
+    </div>
+    <div class="app-option-summary">
+        <h3>URL handling</h3>
+        <ul>
+            <li>
+                <span>Ignore protocol</span>
+                <span class="app-pill">{{ options.ignore_protocol|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Normalize trailing slash</span>
+                <span class="app-pill">{{ options.normalize_trailing_slash|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Drop tracking params</span>
+                <span class="app-pill">{{ options.drop_tracking_params|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Lowercase host</span>
+                <span class="app-pill">{{ options.lowercase_host|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
+            </li>
+            <li>
+                <span>Ignore URL fragments</span>
+                <span class="app-pill">{{ options.ignore_url_fragments|default_if_none:False|yesno:"Enabled,Disabled" }}</span>
+            </li>
+        </ul>
+    </div>
+    <div class="app-panel-divider"></div>
+    <div class="app-download">
         {% if persisted and result %}
-            <a href="{% url 'compare:export-pdf' result.pk %}" class="inline-flex items-center rounded bg-emerald-600 px-3 py-2 text-white">Download PDF</a>
+            <a href="{% url 'compare:export-pdf' result.pk %}" class="app-button app-button--secondary">Download PDF</a>
         {% else %}
-            <span class="inline-flex cursor-not-allowed items-center rounded bg-slate-200 px-3 py-2 text-slate-500" title="Configure the database to enable downloads.">Download unavailable</span>
+            <span class="app-button app-button--disabled" title="Configure the database to enable downloads.">Download unavailable</span>
         {% endif %}
     </div>
 </section>
