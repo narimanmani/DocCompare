@@ -23,6 +23,7 @@ def test_build_diff_detects_link_href_change_in_equal_paragraphs() -> None:
     assert len(result.link_changes) == 1
     assert result.link_changes[0]["type"] == "link-href-changed"
     assert "link-href-changed" in result.html
+    assert "diff-link-href'>https://example.com/docs/v2" in result.html
 
 
 def test_build_diff_marks_link_additions_in_equal_segments() -> None:
@@ -42,6 +43,7 @@ def test_build_diff_marks_link_additions_in_equal_segments() -> None:
     assert result.summary["links_added"] == 1
     assert any(record["type"] == "link-added" for record in result.link_changes)
     assert "diff-panel--link-change" in result.html
+    assert "diff-link-href'>https://example.com" in result.html
 
 
 def test_build_diff_flags_text_differences_hidden_by_normalization() -> None:
