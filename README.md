@@ -68,6 +68,9 @@ docdiff/
 ## Local development
 1. Create and activate a Python 3.11 virtual environment.
 2. Install dependencies: `pip install -r requirements.txt`.
+   - Optional but recommended: install [Pandoc](https://pandoc.org/installing.html)
+     so DOCX diffs include full formatting details. Without Pandoc the
+     application falls back to a simplified parser.
 3. Copy environment file: `cp .env.example .env`.
 4. Run migrations: `python manage.py migrate`.
 5. Build Tailwind assets (optional for development): `npx tailwindcss -i compare/static/src/input.css -o compare/static/dist/styles.css --watch`.
@@ -88,7 +91,7 @@ npx tailwindcss -i compare/static/src/input.css -o compare/static/dist/styles.cs
 ```
 
 ## Heroku deployment
-DocDiff is ready for deployment to Heroku. Ensure the following files are committed: `Procfile`, `runtime.txt`, `Aptfile`, `requirements.txt`, and the Django project. The Procfile now runs helper scripts that verify Pandoc is installed before the dyno boots or release tasks execute, so deployments will fail fast if the Apt buildpack (or another installation method) is missing.
+DocDiff is ready for deployment to Heroku. Ensure the following files are committed: `Procfile`, `runtime.txt`, `Aptfile`, `requirements.txt`, and the Django project. The Procfile runs a helper script that adds the Apt buildpack's binaries (including Pandoc) to the PATH when available and otherwise prints a warning so the dyno can still boot with reduced diff fidelity.
 
 ### Buildpacks
 ```
