@@ -743,6 +743,16 @@ body.app-body {
   gap: 1.5rem;
 }
 
+.diff-view--changes-only .diff-panel--equal {
+  display: none;
+}
+
+.app-diff-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
 .diff-view__legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

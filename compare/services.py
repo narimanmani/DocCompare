@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
 import zipfile
 import tempfile
@@ -278,6 +279,44 @@ def _accept_all_revisions(element: ET.Element) -> None:
             _append_adjacent_text(element, idx + len(grandchildren), tail)
 
 
+def _rewrite_document_with_accepted_revisions(path: Path) -> Path:
+    """Return a DOCX path with revisions accepted, rewriting if needed."""
+
+    try:
+        with zipfile.ZipFile(path) as archive:
+            try:
+                document_xml = archive.read("word/document.xml")
+            except KeyError:
+                return path
+    except (FileNotFoundError, zipfile.BadZipFile):
+        return path
+
+    try:
+        document_tree = ET.fromstring(document_xml)
+    except ET.ParseError:
+        return path
+
+    _accept_all_revisions(document_tree)
+    sanitized_xml = ET.tostring(document_tree, encoding="utf-8")
+    if sanitized_xml == document_xml:
+        return path
+
+    fd, sanitized_name = tempfile.mkstemp(suffix=".docx")
+    os.close(fd)
+    sanitized_path = Path(sanitized_name)
+
+    with zipfile.ZipFile(path) as source, zipfile.ZipFile(
+        sanitized_path, "w"
+    ) as destination:
+        for info in source.infolist():
+            data = source.read(info.filename)
+            if info.filename == "word/document.xml":
+                data = sanitized_xml
+            destination.writestr(info, data)
+
+    return sanitized_path
+
+
 def _parse_docx_xml(path: Path) -> list[Paragraph] | None:
     try:
         with zipfile.ZipFile(path) as archive:
@@ -351,26 +390,29 @@ def parse_docx_bytes(data: bytes) -> list[Paragraph]:
     with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_file:
         tmp_file.write(data)
         tmp_path = Path(tmp_file.name)
+    sanitized_path = _rewrite_document_with_accepted_revisions(tmp_path)
     try:
-        paragraphs = _parse_with_pandoc(tmp_path)
+        paragraphs = _parse_with_pandoc(sanitized_path)
         if paragraphs is not None:
             return paragraphs
 
-        xml_paragraphs = _parse_docx_xml(tmp_path)
+        xml_paragraphs = _parse_docx_xml(sanitized_path)
         if xml_paragraphs is not None:
             return xml_paragraphs
 
-        python_docx_paragraphs = _parse_with_python_docx(tmp_path)
+        python_docx_paragraphs = _parse_with_python_docx(sanitized_path)
         if python_docx_paragraphs is not None:
             return python_docx_paragraphs
 
         try:
-            text_blocks = _parse_with_docx2python(tmp_path)
+            text_blocks = _parse_with_docx2python(sanitized_path)
         except Exception:
             text_blocks = [p.text for p in (python_docx_paragraphs or [])]
         return paragraphs_from_text(text_blocks)
     finally:
         tmp_path.unlink(missing_ok=True)
+        if sanitized_path != tmp_path:
+            sanitized_path.unlink(missing_ok=True)
 
 
 def parse_multiple(files: Iterable[tuple[str, bytes]]) -> tuple[list[Paragraph], list[Paragraph], list[str]]:
