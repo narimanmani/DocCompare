@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${DOCCOMPARE_PANDOC_CHECKED:-}" = "1" ]; then
+  exit 0
+fi
+
 if command -v pandoc >/dev/null 2>&1; then
   exit 0
 fi
 
-# Heroku Apt buildpack installs packages under /app/.apt
-if [ -x /app/.apt/usr/bin/pandoc ]; then
-  export PATH="/app/.apt/usr/bin:$PATH"
-  exec "$0"
-fi
+for candidate in /app/.apt/usr/bin /app/.apt/bin /app/.heroku/vendor/bin; do
+  if [ -x "$candidate/pandoc" ]; then
+    export PATH="$candidate:$PATH"
+    DOCCOMPARE_PANDOC_CHECKED=1 exec "$0"
+  fi
+done
 
-echo "Pandoc is required but was not found on the PATH." >&2
-echo "Ensure the heroku-community/apt buildpack is enabled and includes pandoc in Aptfile." >&2
-exit 1
+cat >&2 <<'EOF'
+[warning] Pandoc was not found on the PATH. The application will fall back to
+plain-text parsing, which may reduce diff fidelity.
+
+Install Pandoc locally (https://pandoc.org/installing.html) or ensure the
+heroku-community/apt buildpack is enabled with "pandoc" listed in Aptfile.
+EOF
+
+exit 0
