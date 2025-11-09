@@ -30,6 +30,18 @@
             {% include 'compare/_link_changes.html' %}
         </div>
         <article class="app-result-diff" aria-live="polite">
+            <div class="app-diff-toggle">
+                <button
+                    type="button"
+                    class="app-button app-button--subtle"
+                    data-diff-toggle
+                    data-label-show="Show only changes"
+                    data-label-all="Show full comparison"
+                    aria-pressed="false"
+                >
+                    Show only changes
+                </button>
+            </div>
             <div class="prose app-prose max-w-none">
                 {{ diff_html|safe }}
             </div>
