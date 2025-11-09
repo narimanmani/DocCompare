@@ -70,6 +70,7 @@ _DIFF_PANEL_META: dict[str, tuple[str, str, str]] = {
     "replace": ("Edited", "✏️", "Wording changed between documents."),
     "delete": ("Removed", "➖", "Missing from Document B."),
     "insert": ("Added", "➕", "New in Document B."),
+    "link-change": ("Link change", "🔗", "Links differ between the documents."),
     "default": ("Change", "✱", "Review this difference between the documents."),
 }
 
@@ -243,18 +244,41 @@ def build_diff(
                 left_string, left_placeholders = _paragraph_to_diff_string(paragraph)
                 right_string, right_placeholders = _paragraph_to_diff_string(counterpart)
 
+                panel_tag = "equal"
+                if paragraph.text != counterpart.text:
+                    html_left_fragment, html_right_fragment, stats = _word_diff(
+                        left_string, right_string
+                    )
+                    totals["insertions"] += stats["insertions"]
+                    totals["deletions"] += stats["deletions"]
+                    totals["replacements"] += stats["replacements"]
+                    if stats["insertions"] and not stats["deletions"]:
+                        panel_tag = "insert"
+                    elif stats["deletions"] and not stats["insertions"]:
+                        panel_tag = "delete"
+                    else:
+                        panel_tag = "replace"
+                else:
+                    html_left_fragment = html.escape(left_string)
+                    html_right_fragment = html.escape(right_string)
+
+                if panel_tag == "equal" and (
+                    left_status or right_status or paragraph_records
+                ):
+                    panel_tag = "link-change"
+
                 html_left = _inject_anchors(
-                    html.escape(left_string), left_placeholders, left_status, "left"
+                    html_left_fragment, left_placeholders, left_status, "left"
                 )
                 html_right = _inject_anchors(
-                    html.escape(right_string), right_placeholders, right_status, "right"
+                    html_right_fragment, right_placeholders, right_status, "right"
                 )
 
-                panels.append(_render_diff_panel(row_id, "equal", html_left, html_right))
+                panels.append(_render_diff_panel(row_id, panel_tag, html_left, html_right))
                 details.append(
                     {
                         "anchor": row_id,
-                        "type": "equal",
+                        "type": panel_tag,
                         "left": paragraph.text,
                         "right": counterpart.text,
                         "links": [record.as_dict() for record in paragraph_records],
