@@ -110,18 +110,71 @@ def _flatten_block(block: object) -> list[str]:
     return []
 
 
-def _parse_with_python_docx(path: Path) -> list[str]:
+def _parse_with_python_docx(path: Path) -> list[Paragraph] | None:
+    """Parse a DOCX file using python-docx while preserving hyperlinks."""
+
     from docx import Document
+    from docx.opc.constants import RELATIONSHIP_TYPE
 
     document = Document(path)
-    paragraphs = [p.text.strip() for p in document.paragraphs if p.text.strip()]
+
+    relationships: dict[str, str] = {}
+    for rel in document.part.rels.values():
+        if rel.reltype == RELATIONSHIP_TYPE.HYPERLINK:
+            target = getattr(rel, "target_ref", "")
+            if target:
+                relationships[rel.rId] = target
+
+    paragraphs: list[Paragraph] = []
+    for paragraph in document.paragraphs:
+        tokens: list[Token] = []
+        text_buffer: list[str] = []
+
+        def flush_text_buffer() -> None:
+            if not text_buffer:
+                return
+            text = _normalize_docx_text(" ".join(text_buffer))
+            text_buffer.clear()
+            if text:
+                tokens.append(Token(type="text", text=text))
+
+        for child in paragraph._p:  # type: ignore[attr-defined]
+            if child.tag == _PARAGRAPH_PROPERTIES_TAG:
+                continue
+            if child.tag == _HYPERLINK_TAG:
+                flush_text_buffer()
+                anchor = _build_anchor_token(child, relationships)
+                if anchor:
+                    tokens.append(anchor)
+                continue
+
+            text = _extract_text(child)
+            if text:
+                text_buffer.append(text)
+
+        flush_text_buffer()
+
+        meaningful = False
+        if tokens:
+            meaningful = any(token.type == "anchor" or token.text.strip() for token in tokens)
+        if meaningful:
+            paragraphs.append(Paragraph(tokens=tokens))
+
     for table in document.tables:
-        cells = []
+        rows: list[str] = []
         for row in table.rows:
-            cells.append(" | ".join(cell.text.strip() for cell in row.cells))
-        if cells:
-            paragraphs.append(f"[table] {' / '.join(filter(None, cells))}")
-    return paragraphs
+            cells = [cell.text.strip() for cell in row.cells]
+            rows.append(" | ".join(filter(None, cells)))
+        combined = " / ".join(filter(None, rows))
+        if combined:
+            paragraphs.append(
+                Paragraph(tokens=[Token(type="text", text=f"[table] {combined}")])
+            )
+
+    if paragraphs:
+        return paragraphs
+
+    return None
 
 
 def _parse_with_pandoc(path: Path) -> list[Paragraph] | None:
@@ -307,10 +360,14 @@ def parse_docx_bytes(data: bytes) -> list[Paragraph]:
         if xml_paragraphs is not None:
             return xml_paragraphs
 
+        python_docx_paragraphs = _parse_with_python_docx(tmp_path)
+        if python_docx_paragraphs is not None:
+            return python_docx_paragraphs
+
         try:
             text_blocks = _parse_with_docx2python(tmp_path)
         except Exception:
-            text_blocks = _parse_with_python_docx(tmp_path)
+            text_blocks = [p.text for p in (python_docx_paragraphs or [])]
         return paragraphs_from_text(text_blocks)
     finally:
         tmp_path.unlink(missing_ok=True)

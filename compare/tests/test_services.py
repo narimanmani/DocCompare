@@ -135,6 +135,22 @@ def test_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
     assert records[0].after == {"text": "Technology Test Strategy - FR", "href": second_url}
 
 
+def test_python_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
+    from compare import services
+
+    monkeypatch.setattr(services, "_parse_with_pandoc", lambda path: None)
+    monkeypatch.setattr(services, "_parse_docx_xml", lambda path: None)
+
+    url = "https://example.com/docs"
+
+    paragraphs = parse_docx_bytes(make_docx_with_link(url))
+
+    assert paragraphs
+    anchors = [token for token in paragraphs[0].tokens if token.type == "anchor"]
+    assert anchors
+    assert anchors[0].href == url
+
+
 def test_parse_docx_accepts_tracked_changes(monkeypatch) -> None:
     from compare import services
 
