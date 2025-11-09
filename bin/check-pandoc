@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if command -v pandoc >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Heroku Apt buildpack installs packages under /app/.apt
+if [ -x /app/.apt/usr/bin/pandoc ]; then
+  export PATH="/app/.apt/usr/bin:$PATH"
+  exec "$0"
+fi
+
+echo "Pandoc is required but was not found on the PATH." >&2
+echo "Ensure the heroku-community/apt buildpack is enabled and includes pandoc in Aptfile." >&2
+exit 1

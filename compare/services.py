@@ -4,16 +4,18 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
+import zipfile
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
+from xml.etree import ElementTree as ET
 
 from django.db import transaction
 from django.utils.html import escape
 
 from .diff_utils import DiffComputationResult, DiffOptions as EngineOptions, build_diff
-from .html_tokens import Paragraph, paragraphs_from_html, paragraphs_from_text
+from .html_tokens import Paragraph, Token, paragraphs_from_html, paragraphs_from_text
 from .models import DiffResult
 from .url_utils import UrlNormalizationOptions
 
@@ -144,6 +146,111 @@ def _parse_with_pandoc(path: Path) -> list[Paragraph] | None:
     return paragraphs
 
 
+_W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+_TEXT_TAG = f"{{{_W_NS}}}t"
+_TAB_TAG = f"{{{_W_NS}}}tab"
+_BR_TAGS = {f"{{{_W_NS}}}br", f"{{{_W_NS}}}cr"}
+_PARAGRAPH_PROPERTIES_TAG = f"{{{_W_NS}}}pPr"
+_HYPERLINK_TAG = f"{{{_W_NS}}}hyperlink"
+_ANCHOR_ATTR = f"{{{_W_NS}}}anchor"
+_ID_ATTR = f"{{{_R_NS}}}id"
+_REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+
+
+def _normalize_docx_text(value: str) -> str:
+    return " ".join(value.split())
+
+
+def _extract_text(element: ET.Element) -> str:
+    parts: list[str] = []
+    for node in element.iter():
+        if node.tag == _TEXT_TAG and node.text:
+            parts.append(node.text)
+        elif node.tag == _TAB_TAG:
+            parts.append(" ")
+        elif node.tag in _BR_TAGS:
+            parts.append(" ")
+    return _normalize_docx_text(" ".join(parts))
+
+
+def _build_anchor_token(element: ET.Element, relationships: dict[str, str]) -> Token | None:
+    rel_id = element.get(_ID_ATTR, "")
+    href = relationships.get(rel_id, "") if rel_id else ""
+    anchor = element.get(_ANCHOR_ATTR, "")
+    if anchor and not href:
+        href = f"#{anchor}"
+    text = _extract_text(element)
+    if not text:
+        return None
+    return Token(type="anchor", text=text, href=href)
+
+
+def _parse_docx_xml(path: Path) -> list[Paragraph] | None:
+    try:
+        with zipfile.ZipFile(path) as archive:
+            document_xml = archive.read("word/document.xml")
+            rels_xml = archive.read("word/_rels/document.xml.rels")
+    except KeyError:
+        return None
+    except FileNotFoundError:
+        return None
+
+    try:
+        document_tree = ET.fromstring(document_xml)
+        rels_tree = ET.fromstring(rels_xml)
+    except ET.ParseError:
+        return None
+
+    relationships: dict[str, str] = {}
+    for rel in rels_tree.findall(f"{{{_REL_NS}}}Relationship"):
+        rel_type = rel.get("Type", "")
+        if rel_type.endswith("/hyperlink"):
+            rel_id = rel.get("Id")
+            target = rel.get("Target", "")
+            if rel_id:
+                relationships[rel_id] = target
+
+    paragraphs: list[Paragraph] = []
+    for paragraph in document_tree.findall(".//w:p", {"w": _W_NS}):
+        tokens: list[Token] = []
+        text_buffer: list[str] = []
+
+        def flush_text_buffer() -> None:
+            if not text_buffer:
+                return
+            text = _normalize_docx_text(" ".join(text_buffer))
+            text_buffer.clear()
+            if text:
+                tokens.append(Token(type="text", text=text))
+
+        for child in paragraph:
+            if child.tag == _PARAGRAPH_PROPERTIES_TAG:
+                continue
+            if child.tag == _HYPERLINK_TAG:
+                flush_text_buffer()
+                anchor = _build_anchor_token(child, relationships)
+                if anchor:
+                    tokens.append(anchor)
+                continue
+
+            text = _extract_text(child)
+            if text:
+                text_buffer.append(text)
+
+        flush_text_buffer()
+
+        meaningful = False
+        if tokens:
+            meaningful = any(token.type == "anchor" or token.text.strip() for token in tokens)
+        if meaningful:
+            paragraphs.append(Paragraph(tokens=tokens))
+
+    if not paragraphs:
+        return None
+    return paragraphs
+
+
 def parse_docx_bytes(data: bytes) -> list[Paragraph]:
     """Parse a DOCX file into structured paragraphs."""
 
@@ -154,6 +261,10 @@ def parse_docx_bytes(data: bytes) -> list[Paragraph]:
         paragraphs = _parse_with_pandoc(tmp_path)
         if paragraphs is not None:
             return paragraphs
+
+        xml_paragraphs = _parse_docx_xml(tmp_path)
+        if xml_paragraphs is not None:
+            return xml_paragraphs
 
         try:
             text_blocks = _parse_with_docx2python(tmp_path)
