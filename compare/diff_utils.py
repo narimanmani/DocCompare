@@ -8,7 +8,7 @@ from typing import Iterable, List, Sequence
 
 from diff_match_patch import diff_match_patch
 
-from .diff_links import LinkDiffRecord, diff_paragraph_links
+from .diff_links import diff_paragraph_links
 from .html_tokens import Paragraph, Token
 from .url_utils import UrlNormalizationOptions
 
@@ -62,6 +62,50 @@ def _normalize_whitespace(text: str) -> str:
     import re
 
     return re.sub(r"\s+", " ", text).strip()
+
+
+
+_DIFF_PANEL_META: dict[str, tuple[str, str, str]] = {
+    "equal": ("No change", "⏸", "Content matches in both documents."),
+    "replace": ("Edited", "✏️", "Wording changed between documents."),
+    "delete": ("Removed", "➖", "Missing from Document B."),
+    "insert": ("Added", "➕", "New in Document B."),
+    "default": ("Change", "✱", "Review this difference between the documents."),
+}
+
+
+def _render_diff_panel(panel_id: str, tag: str, left_html: str, right_html: str) -> str:
+    """Render a diff block that places both versions side-by-side."""
+
+    label, icon, description = _DIFF_PANEL_META.get(tag, _DIFF_PANEL_META["default"])
+    safe_id = html.escape(panel_id, quote=True)
+    icon_markup = html.escape(icon)
+    label_markup = html.escape(label)
+    description_markup = html.escape(description)
+    return f"""
+<section id='{safe_id}' class='diff-panel diff-panel--{tag}'>
+    <header class='diff-panel__header'>
+        <div class='diff-panel__meta'>
+            <span class='diff-panel__icon' aria-hidden='true'>{icon_markup}</span>
+            <div class='diff-panel__text'>
+                <span class='diff-panel__label'>{label_markup}</span>
+                <span class='diff-panel__description'>{description_markup}</span>
+            </div>
+        </div>
+        <a class='diff-panel__anchor' href='#{safe_id}' aria-label='Copy link to this change'>¶</a>
+    </header>
+    <div class='diff-panel__columns'>
+        <div class='diff-panel__column diff-panel__column--left'>
+            <span class='diff-panel__column-title'>Document A</span>
+            {left_html}
+        </div>
+        <div class='diff-panel__column diff-panel__column--right'>
+            <span class='diff-panel__column-title'>Document B</span>
+            {right_html}
+        </div>
+    </div>
+</section>
+""".strip()
 
 
 def _word_diff(original_a: str, original_b: str) -> tuple[str, str, dict[str, int]]:
@@ -156,6 +200,7 @@ def _merge_paragraphs(paragraphs: Sequence[Paragraph]) -> Paragraph:
     return Paragraph(tokens=tokens)
 
 
+
 def build_diff(
     paragraphs_a: Sequence[Paragraph],
     paragraphs_b: Sequence[Paragraph],
@@ -168,7 +213,7 @@ def build_diff(
     normalized_b = [options.normalize(p.text) for p in paragraphs_b]
 
     matcher = SequenceMatcher(a=normalized_a, b=normalized_b, autojunk=False)
-    rows: list[str] = []
+    panels: list[str] = []
     details: list[dict[str, object]] = []
     link_records: list[dict[str, object]] = []
 
@@ -205,9 +250,7 @@ def build_diff(
                     html.escape(right_string), right_placeholders, right_status, "right"
                 )
 
-                rows.append(
-                    f"<tr id='{row_id}'><td>{html_left}</td><td>{html_right}</td></tr>"
-                )
+                panels.append(_render_diff_panel(row_id, "equal", html_left, html_right))
                 details.append(
                     {
                         "anchor": row_id,
@@ -237,9 +280,7 @@ def build_diff(
             html_left = _inject_anchors(html_left, left_placeholders, left_status, "left")
             html_right = _inject_anchors(html_right, right_placeholders, right_status, "right")
 
-            rows.append(
-                f"<tr id='{anchor}' class='diff-{tag}'><td>{html_left}</td><td>{html_right}</td></tr>"
-            )
+            panels.append(_render_diff_panel(anchor, tag, html_left, html_right))
             details.append(
                 {
                     "anchor": anchor,
@@ -261,18 +302,16 @@ def build_diff(
         **link_totals,
     }
 
-    table_html = """
-    <table class="diff-table">
-        <thead>
-            <tr><th>Document A</th><th>Document B</th></tr>
-        </thead>
-        <tbody>
-    """
-    table_html += "".join(rows)
-    table_html += "</tbody></table>"
+    diff_markup: list[str] = [
+        "<div class='diff-view'>",
+        "<div class='diff-view__legend' aria-hidden='true'><span>Document A</span><span>Document B</span></div>",
+    ]
+    diff_markup.extend(panels)
+    diff_markup.append("</div>")
+    html_output = "\n".join(diff_markup)
 
     return DiffComputationResult(
-        html=table_html,
+        html=html_output,
         summary=summary,
         paragraphs=details,
         link_changes=link_records,

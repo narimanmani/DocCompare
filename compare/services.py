@@ -339,9 +339,33 @@ def export_diff_pdf(diff: DiffResult) -> bytes:
         <head>
             <meta charset='utf-8'>
             <style>
-                body {{ font-family: sans-serif; }}
-                .diff-table {{ width: 100%; border-collapse: collapse; }}
-                .diff-table th, .diff-table td {{ border: 1px solid #ccc; padding: 8px; vertical-align: top; }}
+                body {{ font-family: sans-serif; color: #0f172a; }}
+                .diff-view {{ display: flex; flex-direction: column; gap: 24px; }}
+                .diff-view__legend {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: #475569; }}
+                .diff-panel {{ border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; overflow: hidden; }}
+                .diff-panel__header {{ display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; }}
+                .diff-panel__meta {{ display: flex; align-items: center; gap: 12px; }}
+                .diff-panel__icon {{ display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; font-size: 16px; background: rgba(15, 23, 42, 0.08); }}
+                .diff-panel__text {{ display: flex; flex-direction: column; gap: 4px; font-size: 14px; }}
+                .diff-panel__label {{ font-weight: 600; }}
+                .diff-panel__description {{ font-size: 12px; color: #475569; }}
+                .diff-panel__anchor {{ color: #94a3b8; font-size: 12px; text-decoration: none; }}
+                .diff-panel__columns {{ display: grid; grid-template-columns: repeat(2, 1fr); }}
+                .diff-panel__column {{ padding: 20px; font-size: 14px; line-height: 1.6; border-top: 1px solid #e2e8f0; background: #ffffff; }}
+                .diff-panel__column:first-child {{ border-right: 1px solid #e2e8f0; border-top: 0; }}
+                .diff-panel__column-title {{ display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; }}
+                .diff-panel--equal .diff-panel__header {{ background: #f8fafc; color: #475569; }}
+                .diff-panel--equal .diff-panel__column {{ background: #f8fafc; }}
+                .diff-panel--equal .diff-panel__icon {{ background: #e2e8f0; color: #475569; }}
+                .diff-panel--insert .diff-panel__header {{ background: #ecfdf5; color: #047857; }}
+                .diff-panel--insert .diff-panel__column--right {{ background: #f0fdf4; }}
+                .diff-panel--insert .diff-panel__icon {{ background: #bbf7d0; color: #047857; }}
+                .diff-panel--delete .diff-panel__header {{ background: #fef2f2; color: #b91c1c; }}
+                .diff-panel--delete .diff-panel__column--left {{ background: #fef2f2; }}
+                .diff-panel--delete .diff-panel__icon {{ background: #fecaca; color: #b91c1c; }}
+                .diff-panel--replace .diff-panel__header {{ background: #fffbeb; color: #b45309; }}
+                .diff-panel--replace .diff-panel__column {{ background: #fffbeb; }}
+                .diff-panel--replace .diff-panel__icon {{ background: #fde68a; color: #b45309; }}
                 .diff-ins {{ background-color: #d1fae5; }}
                 .diff-del {{ background-color: #fee2e2; }}
             </style>
