@@ -632,9 +632,8 @@ body.app-body {
 .app-accordion-text {
   margin: 0.15rem 0;
   color: var(--app-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .app-accordion-note {
@@ -673,10 +672,8 @@ body.app-body {
 }
 
 .diff-link .diff-link-text {
-  max-width: 20ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .diff-link-icon {
