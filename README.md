@@ -88,7 +88,7 @@ npx tailwindcss -i compare/static/src/input.css -o compare/static/dist/styles.cs
 ```
 
 ## Heroku deployment
-DocDiff is ready for deployment to Heroku. Ensure the following files are committed: `Procfile`, `runtime.txt`, `Aptfile`, `requirements.txt`, and the Django project.
+DocDiff is ready for deployment to Heroku. Ensure the following files are committed: `Procfile`, `runtime.txt`, `Aptfile`, `requirements.txt`, and the Django project. The Procfile now runs helper scripts that verify Pandoc is installed before the dyno boots or release tasks execute, so deployments will fail fast if the Apt buildpack (or another installation method) is missing.
 
 ### Buildpacks
 ```
