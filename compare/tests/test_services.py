@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import zipfile
 
 import pytest
 from docx import Document
@@ -43,6 +44,23 @@ def make_docx_with_link(url: str) -> bytes:
     _add_hyperlink(paragraph, url, "Technology Test Strategy - FR")
     buffer = BytesIO()
     document.save(buffer)
+    return buffer.getvalue()
+
+
+def make_docx_with_tracked_link(url: str) -> bytes:
+    base = make_docx_with_link(url)
+    source = BytesIO(base)
+    buffer = BytesIO()
+    with zipfile.ZipFile(source) as source_zip:
+        with zipfile.ZipFile(buffer, "w") as target_zip:
+            for info in source_zip.infolist():
+                data = source_zip.read(info.filename)
+                if info.filename == "word/document.xml":
+                    xml = data.decode("utf-8")
+                    xml = xml.replace("<w:hyperlink", "<w:ins><w:hyperlink", 1)
+                    xml = xml.replace("</w:hyperlink>", "</w:hyperlink></w:ins>", 1)
+                    data = xml.encode("utf-8")
+                target_zip.writestr(info.filename, data)
     return buffer.getvalue()
 
 
@@ -115,3 +133,18 @@ def test_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
     assert records[0].type == "link-href-changed"
     assert records[0].before == {"text": "Technology Test Strategy - FR", "href": first_url}
     assert records[0].after == {"text": "Technology Test Strategy - FR", "href": second_url}
+
+
+def test_parse_docx_accepts_tracked_changes(monkeypatch) -> None:
+    from compare import services
+
+    monkeypatch.setattr(services, "_parse_with_pandoc", lambda path: None)
+
+    url = "https://example.com/docs"
+
+    paragraphs = parse_docx_bytes(make_docx_with_tracked_link(url))
+
+    assert paragraphs
+    anchors = [token for token in paragraphs[0].tokens if token.type == "anchor"]
+    assert anchors
+    assert anchors[0].href == url

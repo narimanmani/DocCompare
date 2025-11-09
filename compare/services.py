@@ -156,6 +156,14 @@ _HYPERLINK_TAG = f"{{{_W_NS}}}hyperlink"
 _ANCHOR_ATTR = f"{{{_W_NS}}}anchor"
 _ID_ATTR = f"{{{_R_NS}}}id"
 _REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+_REVISION_UNWRAP_TAGS = {
+    f"{{{_W_NS}}}ins",
+    f"{{{_W_NS}}}moveTo",
+}
+_REVISION_REMOVE_TAGS = {
+    f"{{{_W_NS}}}del",
+    f"{{{_W_NS}}}moveFrom",
+}
 
 
 def _normalize_docx_text(value: str) -> str:
@@ -186,6 +194,37 @@ def _build_anchor_token(element: ET.Element, relationships: dict[str, str]) -> T
     return Token(type="anchor", text=text, href=href)
 
 
+def _append_adjacent_text(parent: ET.Element, index: int, text: str | None) -> None:
+    if not text:
+        return
+    if index <= 0:
+        parent.text = (parent.text or "") + text
+        return
+    previous = parent[index - 1]
+    previous.tail = (previous.tail or "") + text
+
+
+def _accept_all_revisions(element: ET.Element) -> None:
+    children = list(element)
+    for idx, child in enumerate(children):
+        _accept_all_revisions(child)
+        tag = child.tag
+        if tag in _REVISION_REMOVE_TAGS:
+            tail = child.tail
+            element.remove(child)
+            _append_adjacent_text(element, idx, tail)
+            continue
+        if tag in _REVISION_UNWRAP_TAGS:
+            grandchildren = list(child)
+            text = child.text
+            tail = child.tail
+            element.remove(child)
+            for offset, grandchild in enumerate(grandchildren):
+                element.insert(idx + offset, grandchild)
+            _append_adjacent_text(element, idx, text)
+            _append_adjacent_text(element, idx + len(grandchildren), tail)
+
+
 def _parse_docx_xml(path: Path) -> list[Paragraph] | None:
     try:
         with zipfile.ZipFile(path) as archive:
@@ -201,6 +240,8 @@ def _parse_docx_xml(path: Path) -> list[Paragraph] | None:
         rels_tree = ET.fromstring(rels_xml)
     except ET.ParseError:
         return None
+
+    _accept_all_revisions(document_tree)
 
     relationships: dict[str, str] = {}
     for rel in rels_tree.findall(f"{{{_REL_NS}}}Relationship"):
