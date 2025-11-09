@@ -224,3 +224,17 @@
     background-color: #fde68a;
     color: #b45309;
 }
+
+.diff-panel--link-change .diff-panel__header {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+}
+
+.diff-panel--link-change .diff-panel__column {
+    background-color: #eff6ff;
+}
+
+.diff-panel--link-change .diff-panel__icon {
+    background-color: #bfdbfe;
+    color: #1d4ed8;
+}
