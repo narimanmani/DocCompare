@@ -62,3 +62,22 @@ def test_build_diff_flags_text_differences_hidden_by_normalization() -> None:
 
     assert result.summary["replacements"] >= 1
     assert "diff-panel--replace" in result.html
+
+
+def test_build_diff_preserves_links_when_anchor_indices_shift() -> None:
+    left_html = "<p><a href='https://old.example.com'>Docs</a> are here.</p>"
+    right_html = "<p>Read the <a href='https://new.example.com'>Docs</a> now.</p>"
+
+    paragraphs_a = paragraphs_from_html(left_html)
+    paragraphs_b = paragraphs_from_html(right_html)
+
+    result = build_diff(
+        paragraphs_a,
+        paragraphs_b,
+        DiffOptions(ignore_case=False, ignore_punctuation=False, ignore_whitespace=False),
+        UrlNormalizationOptions(),
+    )
+
+    assert "[[ANCHOR" not in result.html
+    assert "https://old.example.com" in result.html
+    assert "https://new.example.com" in result.html

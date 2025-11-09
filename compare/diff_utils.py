@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html
+import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Iterable, List, Sequence
@@ -138,6 +139,44 @@ def _word_diff(original_a: str, original_b: str) -> tuple[str, str, dict[str, in
     return "".join(html_a), "".join(html_b), stats
 
 
+_PLACEHOLDER_PATTERN = re.compile(r"\[\[ANCHOR-(\d+)\]\]")
+
+
+def _protect_anchor_placeholders(
+    left: str, right: str
+) -> tuple[str, str, dict[str, str]]:
+    """Replace anchor placeholders with sentinel characters for diffing."""
+
+    reverse_map: dict[str, str] = {}
+    sentinel_map: dict[str, str] = {}
+    next_codepoint = 0xE000
+
+    def _replacement(match: re.Match[str]) -> str:
+        nonlocal next_codepoint
+        placeholder = match.group(0)
+        sentinel = sentinel_map.get(placeholder)
+        if sentinel is None:
+            sentinel = chr(next_codepoint)
+            sentinel_map[placeholder] = sentinel
+            reverse_map[sentinel] = placeholder
+            next_codepoint += 1
+        return sentinel
+
+    return (
+        _PLACEHOLDER_PATTERN.sub(_replacement, left),
+        _PLACEHOLDER_PATTERN.sub(_replacement, right),
+        reverse_map,
+    )
+
+
+def _restore_anchor_placeholders(text: str, mapping: dict[str, str]) -> str:
+    """Restore anchor placeholders after diffing with sentinels."""
+
+    for sentinel, placeholder in mapping.items():
+        text = text.replace(sentinel, placeholder)
+    return text
+
+
 def _paragraph_to_diff_string(paragraph: Paragraph) -> tuple[str, dict[str, tuple[int, Token]]]:
     placeholders: dict[str, tuple[int, Token]] = {}
     parts: list[str] = []
@@ -250,8 +289,19 @@ def build_diff(
 
                 panel_tag = "equal"
                 if paragraph.text != counterpart.text:
+                    (
+                        protected_left,
+                        protected_right,
+                        placeholder_map,
+                    ) = _protect_anchor_placeholders(left_string, right_string)
                     html_left_fragment, html_right_fragment, stats = _word_diff(
-                        left_string, right_string
+                        protected_left, protected_right
+                    )
+                    html_left_fragment = _restore_anchor_placeholders(
+                        html_left_fragment, placeholder_map
+                    )
+                    html_right_fragment = _restore_anchor_placeholders(
+                        html_right_fragment, placeholder_map
                     )
                     totals["insertions"] += stats["insertions"]
                     totals["deletions"] += stats["deletions"]
@@ -300,7 +350,14 @@ def build_diff(
 
             left_string, left_placeholders = _paragraph_to_diff_string(merged_left)
             right_string, right_placeholders = _paragraph_to_diff_string(merged_right)
-            html_left, html_right, stats = _word_diff(left_string, right_string)
+            (
+                protected_left,
+                protected_right,
+                placeholder_map,
+            ) = _protect_anchor_placeholders(left_string, right_string)
+            html_left, html_right, stats = _word_diff(protected_left, protected_right)
+            html_left = _restore_anchor_placeholders(html_left, placeholder_map)
+            html_right = _restore_anchor_placeholders(html_right, placeholder_map)
             totals["insertions"] += stats["insertions"]
             totals["deletions"] += stats["deletions"]
             totals["replacements"] += stats["replacements"]
