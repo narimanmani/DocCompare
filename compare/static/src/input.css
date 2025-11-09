@@ -19,6 +19,16 @@
     @apply border border-slate-200 align-top p-2;
 }
 
+.diff-link .diff-link-href {
+    display: block;
+    margin-top: 0.1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+    font-size: 0.75rem;
+    color: #2563eb;
+    word-break: break-all;
+}
+
 .diff-replace {
     @apply bg-amber-50;
 }

@@ -167,7 +167,11 @@ def _render_anchor(token: Token, status: str | None, side: str) -> str:
     icon = ""
     if status in {"link-href-changed", "link-text-changed", "link-replaced"}:
         icon = "<span class='diff-link-icon' aria-hidden='true'>🔗</span>"
-    inner_text = f"<span class='diff-link-text'>{text}</span>"
+    inner_parts = [f"<span class='diff-link-text'>{text}</span>"]
+    if status in {"link-href-changed", "link-replaced", "link-added", "link-removed"} and token.href:
+        href_markup = html.escape(token.href)
+        inner_parts.append(f"<code class='diff-link-href'>{href_markup}</code>")
+    inner_text = "".join(inner_parts)
     return f"<a {' '.join(attrs)}>{icon}{inner_text}</a>"
 
 
