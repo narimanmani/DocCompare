@@ -185,9 +185,26 @@ def build_diff(
         anchor = f"para-{index}"
         if tag == "equal":
             for offset, paragraph in enumerate(paragraphs_a[i1:i2]):
-                html_left = _render_plain_paragraph(paragraph, "left")
-                html_right = _render_plain_paragraph(paragraphs_b[j1 + offset], "right")
+                counterpart = paragraphs_b[j1 + offset]
                 row_id = f"{anchor}-{offset}"
+
+                left_status, right_status, paragraph_records, counters = diff_paragraph_links(
+                    row_id, paragraph, counterpart, url_options
+                )
+                for key, value in counters.items():
+                    link_totals[key] += value
+                link_records.extend(record.as_dict() for record in paragraph_records)
+
+                left_string, left_placeholders = _paragraph_to_diff_string(paragraph)
+                right_string, right_placeholders = _paragraph_to_diff_string(counterpart)
+
+                html_left = _inject_anchors(
+                    html.escape(left_string), left_placeholders, left_status, "left"
+                )
+                html_right = _inject_anchors(
+                    html.escape(right_string), right_placeholders, right_status, "right"
+                )
+
                 rows.append(
                     f"<tr id='{row_id}'><td>{html_left}</td><td>{html_right}</td></tr>"
                 )
@@ -196,8 +213,8 @@ def build_diff(
                         "anchor": row_id,
                         "type": "equal",
                         "left": paragraph.text,
-                        "right": paragraphs_b[j1 + offset].text,
-                        "links": [],
+                        "right": counterpart.text,
+                        "links": [record.as_dict() for record in paragraph_records],
                     }
                 )
         else:
