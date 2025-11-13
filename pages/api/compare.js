@@ -1,5 +1,6 @@
 import formidable from 'formidable';
 import HtmlDiffModule from 'htmldiff-js';
+import { DOMParser } from '@xmldom/xmldom';
 import { docxToAcceptedHtml } from '../../lib/docx';
 
 export const config = {
@@ -75,10 +76,13 @@ export default async function handler(req, res) {
       ? HtmlDiff.execute(cleanOriginal, cleanRevised)
       : new HtmlDiff(cleanOriginal, cleanRevised).build();
 
+    const changes = buildChangeSummary(diffHtml);
+
     res.status(200).json({
       originalHtml: cleanOriginal,
       revisedHtml: cleanRevised,
-      diffHtml
+      diffHtml,
+      changes
     });
   } catch (error) {
     console.error(error);
@@ -114,4 +118,114 @@ async function cleanupFiles(files) {
     .map((file) => fsUnlink(file.filepath));
 
   await Promise.all(removals);
+}
+
+function buildChangeSummary(diffHtml) {
+  if (!diffHtml) {
+    return [];
+  }
+
+  try {
+    const parser = new DOMParser();
+    const document = parser.parseFromString(`<body>${diffHtml}</body>`, 'text/html');
+    const body = document?.documentElement;
+
+    if (!body) {
+      return [];
+    }
+
+    const deletions = Array.from(body.getElementsByTagName('del') || []);
+
+    const changes = deletions
+      .map((deletion, index) => summarizeChange(deletion, findMatchingInsertion(deletion), index))
+      .filter(Boolean);
+
+    return changes;
+  } catch (error) {
+    console.warn('Unable to build change summary', error);
+    return [];
+  }
+}
+
+function findMatchingInsertion(deletionNode) {
+  if (!deletionNode) {
+    return null;
+  }
+
+  let sibling = deletionNode.nextSibling;
+
+  while (sibling) {
+    if (sibling.nodeType === 1) {
+      const tagName = sibling.nodeName?.toLowerCase();
+
+      if (tagName === 'ins') {
+        return sibling;
+      }
+
+      if (tagName === 'del') {
+        break;
+      }
+    }
+
+    sibling = sibling.nextSibling;
+  }
+
+  return null;
+}
+
+function summarizeChange(deletionNode, insertionNode, index) {
+  if (!deletionNode && !insertionNode) {
+    return null;
+  }
+
+  const originalText = normalizeText(deletionNode?.textContent || '');
+  const revisedText = normalizeText(insertionNode?.textContent || '');
+  const originalAnchor = findFirstAnchor(deletionNode);
+  const revisedAnchor = findFirstAnchor(insertionNode);
+
+  const changeType = originalAnchor || revisedAnchor ? 'hyperlink' : 'text';
+  const originalHref = originalAnchor?.getAttribute('href') || null;
+  const revisedHref = revisedAnchor?.getAttribute('href') || null;
+
+  if (!originalText && !revisedText && !originalHref && !revisedHref) {
+    return null;
+  }
+
+  const context = normalizeText(deletionNode?.parentNode?.textContent || '') || null;
+
+  return {
+    id: index + 1,
+    description: changeType === 'hyperlink' ? 'Hyperlink updated' : 'Content updated',
+    originalText: originalText || null,
+    revisedText: revisedText || null,
+    changeType,
+    originalHref,
+    revisedHref,
+    context
+  };
+}
+
+function findFirstAnchor(node) {
+  if (!node || !node.childNodes) {
+    return null;
+  }
+
+  if (node.nodeType === 1 && node.nodeName?.toLowerCase() === 'a') {
+    return node;
+  }
+
+  for (let i = 0; i < node.childNodes.length; i += 1) {
+    const child = node.childNodes[i];
+    const anchor = findFirstAnchor(child);
+
+    if (anchor) {
+      return anchor;
+    }
+  }
+
+  return null;
+}
+
+function normalizeText(text) {
+  return text.replace(/\s+/g, ' ').trim();
 }

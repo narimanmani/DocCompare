@@ -72,6 +72,67 @@ export default function Home() {
 
         {state.result && (
           <section className="results-grid">
+            <article className="panel panel--changes">
+              <h2>Change summary</h2>
+              {state.result.changes && state.result.changes.length > 0 ? (
+                <div className="table-wrapper">
+                  <table className="changes-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Change</th>
+                        <th scope="col">Doc 1 value</th>
+                        <th scope="col">Doc 2 value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {state.result.changes.map((change) => (
+                        <tr key={change.id}>
+                          <td>
+                            <div className="change-summary">
+                              <span className={`change-pill change-pill--${change.changeType}`}>
+                                {change.changeType === 'hyperlink' ? 'Hyperlink' : 'Text'}
+                              </span>
+                              <div className="change-description">{change.description}</div>
+                              {change.context && (
+                                <div className="change-context">{change.context}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="change-value">
+                              {change.originalText ?? '—'}
+                            </div>
+                            {change.originalHref && (
+                              <div className="change-href">
+                                <span>Link:</span>{' '}
+                                <a href={change.originalHref} target="_blank" rel="noreferrer">
+                                  {change.originalHref}
+                                </a>
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <div className="change-value">
+                              {change.revisedText ?? '—'}
+                            </div>
+                            {change.revisedHref && (
+                              <div className="change-href">
+                                <span>Link:</span>{' '}
+                                <a href={change.revisedHref} target="_blank" rel="noreferrer">
+                                  {change.revisedHref}
+                                </a>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="no-changes">No changes detected between the documents.</p>
+              )}
+            </article>
             <article className="panel">
               <h2>Accepted original</h2>
               <div className="document-preview" dangerouslySetInnerHTML={{ __html: state.result.originalHtml }} />
