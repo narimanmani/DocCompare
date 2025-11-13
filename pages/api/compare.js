@@ -206,7 +206,21 @@ function summarizeChange(deletionNode, insertionNode, index) {
 }
 
 function findFirstAnchor(node) {
-  if (!node || !node.childNodes) {
+  if (!node) {
+    return null;
+  }
+
+  const anchorInNode = findAnchorWithinNode(node);
+
+  if (anchorInNode) {
+    return anchorInNode;
+  }
+
+  return findAnchorInAncestors(node);
+}
+
+function findAnchorWithinNode(node) {
+  if (!node) {
     return null;
   }
 
@@ -214,13 +228,31 @@ function findFirstAnchor(node) {
     return node;
   }
 
+  if (!node.childNodes) {
+    return null;
+  }
+
   for (let i = 0; i < node.childNodes.length; i += 1) {
     const child = node.childNodes[i];
-    const anchor = findFirstAnchor(child);
+    const anchor = findAnchorWithinNode(child);
 
     if (anchor) {
       return anchor;
     }
+  }
+
+  return null;
+}
+
+function findAnchorInAncestors(node) {
+  let current = node?.parentNode || null;
+
+  while (current) {
+    if (current.nodeType === 1 && current.nodeName?.toLowerCase() === 'a') {
+      return current;
+    }
+
+    current = current.parentNode || null;
   }
 
   return null;
