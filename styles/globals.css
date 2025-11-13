@@ -88,6 +88,10 @@ button:disabled {
   overflow: hidden;
 }
 
+.panel--changes {
+  grid-column: 1 / -1;
+}
+
 .panel h2 {
   margin-top: 0;
 }
@@ -106,6 +110,86 @@ button:disabled {
 .diff-html del {
   background-color: rgba(239, 68, 68, 0.2);
   text-decoration: line-through;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.changes-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.changes-table th,
+.changes-table td {
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.changes-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.change-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.change-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  width: fit-content;
+}
+
+.change-pill--text {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.change-pill--hyperlink {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.change-description {
+  font-weight: 600;
+}
+
+.change-context {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.change-value {
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.change-href {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.change-href a {
+  word-break: break-all;
+}
+
+.no-changes {
+  margin: 0;
+  color: #4b5563;
 }
 
 .error {
