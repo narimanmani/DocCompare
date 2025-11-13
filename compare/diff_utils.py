@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import html
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from typing import Iterable, List, Sequence
 
 from diff_match_patch import diff_match_patch
 
-from .diff_links import diff_paragraph_links
+from .diff_links import compare_links_by_text
 from .html_tokens import Paragraph, Token
 from .url_utils import UrlNormalizationOptions
 
@@ -233,15 +234,27 @@ def _render_plain_paragraph(paragraph: Paragraph, side: str) -> str:
     return _inject_anchors(escaped, placeholders, {}, side)
 
 
-def _merge_paragraphs(paragraphs: Sequence[Paragraph]) -> Paragraph:
-    if not paragraphs:
-        return Paragraph(tokens=[])
-    if len(paragraphs) == 1:
-        return paragraphs[0]
-    tokens: list[Token] = []
-    for paragraph in paragraphs:
-        tokens.extend(paragraph.tokens)
-    return Paragraph(tokens=tokens)
+def _merge_paragraphs_with_status(
+    paragraphs: Sequence[Paragraph],
+    statuses: dict[int, dict[int, str]],
+    start: int,
+    end: int,
+) -> tuple[Paragraph, dict[int, str]]:
+    if start >= end:
+        return Paragraph(tokens=[]), {}
+
+    merged_tokens: list[Token] = []
+    merged_status: dict[int, str] = {}
+    token_offset = 0
+
+    for index in range(start, end):
+        paragraph = paragraphs[index]
+        merged_tokens.extend(paragraph.tokens)
+        for token_index, status in statuses.get(index, {}).items():
+            merged_status[token_index + token_offset] = status
+        token_offset += len(paragraph.tokens)
+
+    return Paragraph(tokens=merged_tokens), merged_status
 
 
 
@@ -256,19 +269,25 @@ def build_diff(
     normalized_a = [options.normalize(p.text) for p in paragraphs_a]
     normalized_b = [options.normalize(p.text) for p in paragraphs_b]
 
+    (
+        link_statuses_left,
+        link_statuses_right,
+        link_matches,
+    ) = compare_links_by_text(paragraphs_a, paragraphs_b, url_options)
+
     matcher = SequenceMatcher(a=normalized_a, b=normalized_b, autojunk=False)
     panels: list[str] = []
     details: list[dict[str, object]] = []
-    link_records: list[dict[str, object]] = []
 
     totals = {"insertions": 0, "deletions": 0, "replacements": 0}
-    link_totals = {
-        "links_added": 0,
-        "links_removed": 0,
-        "links_changed_text": 0,
-        "links_changed_href": 0,
-    }
     total_paragraphs = max(len(paragraphs_a), len(paragraphs_b)) or 1
+
+    link_records = [record.as_dict() for record in link_matches]
+    link_records_by_left: dict[int, list[int]] = defaultdict(list)
+    link_records_by_right: dict[int, list[int]] = defaultdict(list)
+    for index, record in enumerate(link_matches):
+        link_records_by_left[record.left_paragraph].append(index)
+        link_records_by_right[record.right_paragraph].append(index)
 
     for index, (tag, i1, i2, j1, j2) in enumerate(matcher.get_opcodes()):
         anchor = f"para-{index}"
@@ -277,13 +296,8 @@ def build_diff(
                 counterpart = paragraphs_b[j1 + offset]
                 row_id = f"{anchor}-{offset}"
 
-                left_status, right_status, paragraph_records, counters = diff_paragraph_links(
-                    row_id, paragraph, counterpart, url_options
-                )
-                for key, value in counters.items():
-                    link_totals[key] += value
-                link_records.extend(record.as_dict() for record in paragraph_records)
-
+                left_status = link_statuses_left.get(i1 + offset, {})
+                right_status = link_statuses_right.get(j1 + offset, {})
                 left_string, left_placeholders = _paragraph_to_diff_string(paragraph)
                 right_string, right_placeholders = _paragraph_to_diff_string(counterpart)
 
@@ -316,9 +330,7 @@ def build_diff(
                     html_left_fragment = html.escape(left_string)
                     html_right_fragment = html.escape(right_string)
 
-                if panel_tag == "equal" and (
-                    left_status or right_status or paragraph_records
-                ):
+                if panel_tag == "equal" and (left_status or right_status):
                     panel_tag = "link-change"
 
                 html_left = _inject_anchors(
@@ -329,24 +341,25 @@ def build_diff(
                 )
 
                 panels.append(_render_diff_panel(row_id, panel_tag, html_left, html_right))
+                panel_record_indexes = set()
+                panel_record_indexes.update(link_records_by_left.get(i1 + offset, []))
+                panel_record_indexes.update(link_records_by_right.get(j1 + offset, []))
                 details.append(
                     {
                         "anchor": row_id,
                         "type": panel_tag,
                         "left": paragraph.text,
                         "right": counterpart.text,
-                        "links": [record.as_dict() for record in paragraph_records],
+                        "links": [link_records[i] for i in sorted(panel_record_indexes)],
                     }
                 )
         else:
-            merged_left = _merge_paragraphs(paragraphs_a[i1:i2])
-            merged_right = _merge_paragraphs(paragraphs_b[j1:j2])
-            left_status, right_status, paragraph_records, counters = diff_paragraph_links(
-                anchor, merged_left, merged_right, url_options
+            merged_left, merged_left_status = _merge_paragraphs_with_status(
+                paragraphs_a, link_statuses_left, i1, i2
             )
-            for key, value in counters.items():
-                link_totals[key] += value
-            link_records.extend(record.as_dict() for record in paragraph_records)
+            merged_right, merged_right_status = _merge_paragraphs_with_status(
+                paragraphs_b, link_statuses_right, j1, j2
+            )
 
             left_string, left_placeholders = _paragraph_to_diff_string(merged_left)
             right_string, right_placeholders = _paragraph_to_diff_string(merged_right)
@@ -362,29 +375,44 @@ def build_diff(
             totals["deletions"] += stats["deletions"]
             totals["replacements"] += stats["replacements"]
 
-            html_left = _inject_anchors(html_left, left_placeholders, left_status, "left")
-            html_right = _inject_anchors(html_right, right_placeholders, right_status, "right")
+            html_left = _inject_anchors(
+                html_left, left_placeholders, merged_left_status, "left"
+            )
+            html_right = _inject_anchors(
+                html_right, right_placeholders, merged_right_status, "right"
+            )
 
             panels.append(_render_diff_panel(anchor, tag, html_left, html_right))
+            panel_record_indexes: set[int] = set()
+            for left_index in range(i1, i2):
+                panel_record_indexes.update(link_records_by_left.get(left_index, []))
+            for right_index in range(j1, j2):
+                panel_record_indexes.update(link_records_by_right.get(right_index, []))
             details.append(
                 {
                     "anchor": anchor,
                     "type": tag,
                     "left": merged_left.text,
                     "right": merged_right.text,
-                    "links": [record.as_dict() for record in paragraph_records],
+                    "links": [link_records[i] for i in sorted(panel_record_indexes)],
                 }
             )
 
     change_total = totals["insertions"] + totals["deletions"]
     percent_changed = (change_total / (total_paragraphs or 1)) * 100
 
+    total_link_matches = len(link_matches)
+    link_destination_changes = sum(1 for record in link_matches if record.changed)
+    link_destination_matches = total_link_matches - link_destination_changes
+
     summary: dict[str, float | int] = {
         "insertions": totals["insertions"],
         "deletions": totals["deletions"],
         "replacements": totals["replacements"],
         "percent_changed": round(percent_changed, 2),
-        **link_totals,
+        "link_text_matches": total_link_matches,
+        "link_destination_changes": link_destination_changes,
+        "link_destination_matches": link_destination_matches,
     }
 
     diff_markup: list[str] = [

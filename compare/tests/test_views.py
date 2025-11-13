@@ -51,7 +51,7 @@ def test_api_compare_persists_result(client) -> None:
     assert response.status_code == 201
     payload = response.json()
     assert payload["summary"]["insertions"] >= 0
-    assert "links_added" in payload["summary"]
+    assert "link_text_matches" in payload["summary"]
     assert "id" in payload
 
 

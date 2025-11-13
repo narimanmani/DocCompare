@@ -248,3 +248,23 @@
     background-color: #bfdbfe;
     color: #1d4ed8;
 }
+
+.app-pill--neutral {
+    @apply bg-slate-200 text-slate-600;
+}
+
+.app-muted {
+    color: #64748b;
+    font-style: italic;
+}
+
+.app-link-url {
+    @apply inline-flex;
+    word-break: break-all;
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.app-link-url:hover {
+    color: #1d4ed8;
+}
