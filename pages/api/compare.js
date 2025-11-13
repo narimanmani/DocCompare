@@ -1,5 +1,5 @@
 import formidable from 'formidable';
-import htmldiff from 'htmldiff-js';
+import HtmlDiffModule from 'htmldiff-js';
 import { docxToAcceptedHtml } from '../../lib/docx';
 
 export const config = {
@@ -70,7 +70,10 @@ export default async function handler(req, res) {
     const cleanOriginal = sanitizeHtml(originalHtml);
     const cleanRevised = sanitizeHtml(revisedHtml);
 
-    const diffHtml = htmldiff(cleanOriginal, cleanRevised);
+    const HtmlDiff = HtmlDiffModule?.default ?? HtmlDiffModule;
+    const diffHtml = typeof HtmlDiff.execute === 'function'
+      ? HtmlDiff.execute(cleanOriginal, cleanRevised)
+      : new HtmlDiff(cleanOriginal, cleanRevised).build();
 
     res.status(200).json({
       originalHtml: cleanOriginal,
