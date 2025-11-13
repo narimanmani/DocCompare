@@ -39,6 +39,14 @@ heroku buildpacks:set heroku/nodejs
 heroku buildpacks:remove heroku/python
 ```
 
+If you're unsure which buildpack is currently attached to your app, list them first:
+
+```bash
+heroku buildpacks
+```
+
+The output should show only `heroku/nodejs`. If you still see `heroku/python`, remove it with the command above before pushing again.
+
 Alternatively, you can recreate the Heroku app (or use the [Heroku Dashboard](https://dashboard.heroku.com/)) so that it picks up the `buildpacks` entry defined in `app.json`:
 
 ```json
