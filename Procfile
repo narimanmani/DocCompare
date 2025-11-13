@@ -1,2 +1,1 @@
-web: bin/heroku-web
-release: bin/heroku-release
+web: npm run start -- -p $PORT

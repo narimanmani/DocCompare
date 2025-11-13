@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-# Ensure Pandoc is available before running release tasks.
-"$(dirname "$0")/check-pandoc"
-
-python manage.py migrate
-python manage.py collectstatic --noinput
