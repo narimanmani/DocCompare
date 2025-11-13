@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from compare.diff_utils import DiffOptions, build_diff
 from compare.html_tokens import paragraphs_from_html
 from compare.url_utils import UrlNormalizationOptions
@@ -19,14 +17,17 @@ def test_build_diff_detects_link_href_change_in_equal_paragraphs() -> None:
         UrlNormalizationOptions(),
     )
 
-    assert result.summary["links_changed_href"] == 1
+    assert result.summary["link_destination_changes"] == 1
+    assert result.summary["link_text_matches"] == 1
     assert len(result.link_changes) == 1
-    assert result.link_changes[0]["type"] == "link-href-changed"
+    assert result.link_changes[0]["text"] == "documentation"
+    assert result.link_changes[0]["changed"] is True
+    assert result.link_changes[0]["rightHref"] == "https://example.com/docs/v2"
     assert "link-href-changed" in result.html
     assert "diff-link-href'>https://example.com/docs/v2" in result.html
 
 
-def test_build_diff_marks_link_additions_in_equal_segments() -> None:
+def test_build_diff_ignores_unmatched_links() -> None:
     left_html = "<p>Visit example</p>"
     right_html = "<p>Visit <a href='https://example.com'>example</a></p>"
 
@@ -40,10 +41,9 @@ def test_build_diff_marks_link_additions_in_equal_segments() -> None:
         UrlNormalizationOptions(),
     )
 
-    assert result.summary["links_added"] == 1
-    assert any(record["type"] == "link-added" for record in result.link_changes)
-    assert "diff-panel--link-change" in result.html
-    assert "diff-link-href'>https://example.com" in result.html
+    assert result.summary["link_text_matches"] == 0
+    assert result.link_changes == []
+    assert "diff-panel--link-change" not in result.html
 
 
 def test_build_diff_flags_text_differences_hidden_by_normalization() -> None:

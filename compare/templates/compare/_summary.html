@@ -23,25 +23,21 @@
     </dl>
     <div class="app-panel-divider"></div>
     <div class="app-panel-heading">
-        <h3 class="app-panel-title app-panel-title--sm">Link changes</h3>
-        <p class="app-panel-subtitle">How URLs evolved across documents</p>
+        <h3 class="app-panel-title app-panel-title--sm">Link comparisons</h3>
+        <p class="app-panel-subtitle">Matching hyperlink text across both documents</p>
     </div>
     <dl class="app-summary-grid">
         <div>
-            <dt>Links added</dt>
-            <dd class="app-stat app-stat--positive">{{ summary.links_added }}</dd>
+            <dt>Matching link texts</dt>
+            <dd class="app-stat">{{ summary.link_text_matches }}</dd>
         </div>
         <div>
-            <dt>Links removed</dt>
-            <dd class="app-stat app-stat--negative">{{ summary.links_removed }}</dd>
+            <dt>Destinations updated</dt>
+            <dd class="app-stat app-stat--negative">{{ summary.link_destination_changes }}</dd>
         </div>
         <div>
-            <dt>Link text updated</dt>
-            <dd class="app-stat">{{ summary.links_changed_text }}</dd>
-        </div>
-        <div>
-            <dt>Link targets updated</dt>
-            <dd class="app-stat">{{ summary.links_changed_href }}</dd>
+            <dt>Destinations unchanged</dt>
+            <dd class="app-stat app-stat--positive">{{ summary.link_destination_matches }}</dd>
         </div>
     </dl>
 </section>

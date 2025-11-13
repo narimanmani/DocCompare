@@ -529,6 +529,27 @@ body.app-body {
   font-size: 0.8rem;
 }
 
+.app-pill--neutral {
+  background: rgba(148, 163, 184, 0.25);
+  color: #475569;
+}
+
+.app-muted {
+  color: var(--app-text-muted);
+  font-style: italic;
+}
+
+.app-link-url {
+  display: inline-flex;
+  word-break: break-all;
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.app-link-url:hover {
+  color: #1d4ed8;
+}
+
 .app-download {
   margin-top: 1.2rem;
 }

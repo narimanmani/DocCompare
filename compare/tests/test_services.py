@@ -9,7 +9,7 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml.shared import OxmlElement, qn
 
 from compare.diff_utils import DiffComputationResult
-from compare.diff_links import diff_paragraph_links
+from compare.diff_links import compare_links_by_text
 from compare.services import DiffOptions, parse_docx_bytes, perform_comparison, store_diff_result
 from compare.url_utils import UrlNormalizationOptions
 
@@ -73,10 +73,9 @@ def test_store_diff_result_creates_record() -> None:
             "deletions": 0,
             "replacements": 0,
             "percent_changed": 50.0,
-            "links_added": 0,
-            "links_removed": 0,
-            "links_changed_text": 0,
-            "links_changed_href": 0,
+            "link_text_matches": 0,
+            "link_destination_changes": 0,
+            "link_destination_matches": 0,
         },
         paragraphs=[],
         link_changes=[],
@@ -99,7 +98,7 @@ def test_perform_comparison_generates_summary() -> None:
     assert filenames == ["first.docx", "second.docx"]
     assert diff.summary["insertions"] >= 0
     assert diff.summary["percent_changed"] >= 0
-    assert {"links_added", "links_removed", "links_changed_text", "links_changed_href"} <= diff.summary.keys()
+    assert {"link_text_matches", "link_destination_changes", "link_destination_matches"} <= diff.summary.keys()
 
 
 def test_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
@@ -125,14 +124,15 @@ def test_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
         strip_fragment=False,
     )
 
-    _, _, records, counters = diff_paragraph_links("p0", left[0], right[0], options)
+    left_statuses, right_statuses, records = compare_links_by_text(left, right, options)
 
-    assert counters["links_changed_href"] == 1
-    assert counters["links_changed_text"] == 0
     assert records
-    assert records[0].type == "link-href-changed"
-    assert records[0].before == {"text": "Technology Test Strategy - FR", "href": first_url}
-    assert records[0].after == {"text": "Technology Test Strategy - FR", "href": second_url}
+    assert records[0].text == "Technology Test Strategy - FR"
+    assert records[0].left_href == first_url
+    assert records[0].right_href == second_url
+    assert records[0].changed is True
+    assert any(status == "link-href-changed" for status in left_statuses.get(0, {}).values())
+    assert any(status == "link-href-changed" for status in right_statuses.get(0, {}).values())
 
 
 def test_python_docx_fallback_preserves_hyperlinks(monkeypatch) -> None:
