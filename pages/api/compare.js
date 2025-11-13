@@ -2,6 +2,7 @@ import formidable from 'formidable';
 import HtmlDiffModule from 'htmldiff-js';
 import { DOMParser } from '@xmldom/xmldom';
 import { docxToAcceptedHtml } from '../../lib/docx';
+import { compareDocxHyperlinks } from '../../lib/compareDocxHyperlinks';
 
 export const config = {
   api: {
@@ -77,12 +78,14 @@ export default async function handler(req, res) {
       : new HtmlDiff(cleanOriginal, cleanRevised).build();
 
     const changes = buildChangeSummary(diffHtml);
+    const hyperlinkSummary = await compareDocxHyperlinks(original.filepath, revised.filepath);
 
     res.status(200).json({
       originalHtml: cleanOriginal,
       revisedHtml: cleanRevised,
       diffHtml,
-      changes
+      changes,
+      hyperlinkSummary
     });
   } catch (error) {
     console.error(error);
