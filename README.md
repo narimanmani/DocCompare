@@ -24,16 +24,27 @@ Heroku automatically installs dependencies, runs the production build, and serve
 - `Procfile` defines `web: npm run start -- -p $PORT`.
 - `package.json` includes a `heroku-postbuild` script so the production bundle is generated during deployment.
 
-To avoid the "App not compatible with buildpack" error, make sure the Heroku app is configured to use the Node buildpack. You can either rely on the included `app.json`, or run the following command against an existing app to update it manually:
+### Buildpack configuration
+
+The app must be deployed with the Node.js buildpack. If the Python buildpack is still attached from a previous experiment, the deploy will fail with the following error message during the build step:
+
+```
+App not compatible with buildpack: https://buildpack-registry.s3.amazonaws.com/buildpacks/heroku/python.tgz
+```
+
+To fix this, set the Node.js buildpack explicitly and remove the Python buildpack:
 
 ```bash
 heroku buildpacks:set heroku/nodejs
+heroku buildpacks:remove heroku/python
 ```
 
-If a Python buildpack was previously attached, remove it so the Node buildpack can run:
+Alternatively, you can recreate the Heroku app (or use the [Heroku Dashboard](https://dashboard.heroku.com/)) so that it picks up the `buildpacks` entry defined in `app.json`:
 
-```bash
-heroku buildpacks:remove heroku/python
+```json
+"buildpacks": [
+  { "url": "heroku/nodejs" }
+]
 ```
 
 ## Environment variables
