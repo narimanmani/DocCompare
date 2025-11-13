@@ -23,7 +23,18 @@ Heroku automatically installs dependencies, runs the production build, and serve
 
 - `Procfile` defines `web: npm run start -- -p $PORT`.
 - `package.json` includes a `heroku-postbuild` script so the production bundle is generated during deployment.
-- The Node buildpack is selected automatically from `package.json`; no Python runtime file is required.
+
+To avoid the "App not compatible with buildpack" error, make sure the Heroku app is configured to use the Node buildpack. You can either rely on the included `app.json`, or run the following command against an existing app to update it manually:
+
+```bash
+heroku buildpacks:set heroku/nodejs
+```
+
+If a Python buildpack was previously attached, remove it so the Node buildpack can run:
+
+```bash
+heroku buildpacks:remove heroku/python
+```
 
 ## Environment variables
 
