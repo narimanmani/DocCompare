@@ -1,7 +1,7 @@
 import formidable from 'formidable';
 import HtmlDiffModule from 'htmldiff-js';
 import { DOMParser } from '@xmldom/xmldom';
-import { docxToAcceptedHtml } from '../../lib/docx';
+import { docxToAcceptedContent } from '../../lib/docx';
 import { compareDocxHyperlinks } from '../../lib/compareDocxHyperlinks';
 
 export const config = {
@@ -25,6 +25,93 @@ function validateFile(file) {
 
 function sanitizeHtml(html) {
   return html.replace(/\s{2,}/g, ' ').trim();
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizePlainTextContent(text) {
+  if (!text) {
+    return '';
+  }
+
+  const normalized = text
+    .replace(/\r\n/g, '\n')
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
+    .filter((paragraph) => paragraph.length > 0);
+
+  if (normalized.length === 0) {
+    return '';
+  }
+
+  return normalized
+    .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join('');
+}
+
+function buildHyperlinkChangeSummary(hyperlinkSummary) {
+  if (!hyperlinkSummary) {
+    return [];
+  }
+
+  const entries = [];
+  let counter = 1;
+
+  const pushEntry = ({ description, original, revised }) => {
+    const part = original?.part || revised?.part || null;
+    entries.push({
+      id: `hyperlink-${counter}`,
+      description,
+      originalText: original?.anchorText ?? null,
+      revisedText: revised?.anchorText ?? null,
+      changeType: 'hyperlink',
+      originalHref: original?.url ?? null,
+      revisedHref: revised?.url ?? null,
+      context: part ? `Part: ${part}` : null
+    });
+    counter += 1;
+  };
+
+  hyperlinkSummary.changedUrl?.forEach((change) => {
+    pushEntry({
+      description: 'Hyperlink URL updated',
+      original: change.before,
+      revised: change.after
+    });
+  });
+
+  hyperlinkSummary.changedAnchorText?.forEach((change) => {
+    pushEntry({
+      description: 'Hyperlink text updated',
+      original: change.before,
+      revised: change.after
+    });
+  });
+
+  hyperlinkSummary.added?.forEach((link) => {
+    pushEntry({
+      description: 'Hyperlink added in Doc 2',
+      original: null,
+      revised: link
+    });
+  });
+
+  hyperlinkSummary.removed?.forEach((link) => {
+    pushEntry({
+      description: 'Hyperlink removed from Doc 1',
+      original: link,
+      revised: null
+    });
+  });
+
+  return entries;
 }
 
 export default async function handler(req, res) {
@@ -64,25 +151,30 @@ export default async function handler(req, res) {
       fsReadFile(revised.filepath)
     ]);
 
-    const [originalHtml, revisedHtml] = await Promise.all([
-      docxToAcceptedHtml(originalBuffer),
-      docxToAcceptedHtml(revisedBuffer)
+    const [originalContent, revisedContent] = await Promise.all([
+      docxToAcceptedContent(originalBuffer),
+      docxToAcceptedContent(revisedBuffer)
     ]);
 
-    const cleanOriginal = sanitizeHtml(originalHtml);
-    const cleanRevised = sanitizeHtml(revisedHtml);
+    const originalHtml = sanitizeHtml(originalContent.html);
+    const revisedHtml = sanitizeHtml(revisedContent.html);
+
+    const normalizedOriginal = normalizePlainTextContent(originalContent.text);
+    const normalizedRevised = normalizePlainTextContent(revisedContent.text);
 
     const HtmlDiff = HtmlDiffModule?.default ?? HtmlDiffModule;
     const diffHtml = typeof HtmlDiff.execute === 'function'
-      ? HtmlDiff.execute(cleanOriginal, cleanRevised)
-      : new HtmlDiff(cleanOriginal, cleanRevised).build();
+      ? HtmlDiff.execute(normalizedOriginal, normalizedRevised)
+      : new HtmlDiff(normalizedOriginal, normalizedRevised).build();
 
-    const changes = buildChangeSummary(diffHtml);
     const hyperlinkSummary = await compareDocxHyperlinks(original.filepath, revised.filepath);
+    const textChanges = buildChangeSummary(diffHtml);
+    const hyperlinkChanges = buildHyperlinkChangeSummary(hyperlinkSummary);
+    const changes = [...textChanges, ...hyperlinkChanges];
 
     res.status(200).json({
-      originalHtml: cleanOriginal,
-      revisedHtml: cleanRevised,
+      originalHtml,
+      revisedHtml,
       diffHtml,
       changes,
       hyperlinkSummary
